@@ -16,16 +16,28 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 
-import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
+
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future
 
-@Singleton()
-class MicroserviceHelloWorldController @Inject()(cc: ControllerComponents)
-    extends BackendController(cc) {
+@Singleton
+class RecordsController @Inject()(
+                                               override val controllerComponents: ControllerComponents
+                                             ) extends BackendBaseController {
 
-  def hello(): Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok("Hello world"))
-  }
+  def createRecord(): Action[AnyContent] =
+    Action(NotImplemented)
+
+  def getRecords(eori: String): Action[AnyContent] =
+    Action(NotImplemented)
+
+  def getRecord(eori: String, recordId: String): Action[AnyContent] =
+    Action(NotImplemented)
+
+  def updateRecord(): Action[AnyContent] =
+    Action(NotImplemented)
+
+  def removeRecord(): Action[AnyContent] =
+    Action(NotImplemented)
 }
