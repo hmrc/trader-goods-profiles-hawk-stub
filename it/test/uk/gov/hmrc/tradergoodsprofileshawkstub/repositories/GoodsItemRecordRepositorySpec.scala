@@ -59,7 +59,7 @@ class GoodsItemRecordRepositorySpec
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .configure(
-      "goods-item-records.ttl" -> "5 minutes"
+      "goods-item-records.ttl" -> "1 day"
     )
     .overrides(
       bind[MongoComponent].toInstance(mongoComponent),
@@ -159,6 +159,49 @@ class GoodsItemRecordRepositorySpec
     }
 
     mustPreserveMdc(repository.getById("eori", "recordId"))
+  }
+
+  "get" - {
+
+    val recordsToMatch = for (i <- 0 until 10) yield {
+      val record = generateRecord
+      record.copy(
+        goodsItem = record.goodsItem.copy(eori = "eori"),
+        metadata = record.metadata.copy(
+          createdDateTime = record.metadata.createdDateTime.minus(i, ChronoUnit.DAYS),
+          updatedDateTime = record.metadata.updatedDateTime.minus(i, ChronoUnit.DAYS)
+        )
+      )
+    }
+
+    val recordsToIgnore = recordsToMatch.map(r => r.copy(
+      recordId = UUID.randomUUID().toString,
+      goodsItem = r.goodsItem.copy(eori = UUID.randomUUID().toString)
+    ))
+
+    "must return the relevant records when there is no lastUpdated" in {
+
+      repository.collection.insertMany(recordsToMatch ++ recordsToIgnore).toFuture().futureValue
+
+      val result = repository.get("eori", page = 1, size = 3).futureValue
+
+      result.totalCount mustBe 10
+      result.records.length mustBe 3
+      result.records mustBe recordsToMatch.reverse.slice(3, 6).toList
+    }
+
+    "must return the relevant records when there is a lastUpdated" in {
+
+      repository.collection.insertMany(recordsToMatch ++ recordsToIgnore).toFuture().futureValue
+
+      val result = repository.get("eori", lastUpdated = Some(clock.instant().minus(8, ChronoUnit.DAYS)), page = 1, size = 3).futureValue
+
+      result.totalCount mustBe 9
+      result.records.length mustBe 3
+      result.records mustBe recordsToMatch.reverse.slice(4, 7).toList
+    }
+
+    mustPreserveMdc(repository.get("eori"))
   }
 
   private def generateRecord = GoodsItemRecord(

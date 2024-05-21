@@ -16,16 +16,18 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
-import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, Indexes}
+import org.mongodb.scala.model._
 import play.api.Configuration
+import play.api.libs.json.Json
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.play.json.Codecs.JsonOps
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{AccreditationStatus, GoodsItem, GoodsItemMetadata, GoodsItemRecord}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
-import java.time.Clock
+import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
@@ -41,7 +43,10 @@ class GoodsItemRecordRepository @Inject() (
   mongoComponent = mongoComponent,
   collectionName = "goodsItemRecords",
   domainFormat = GoodsItemRecord.mongoFormat,
-  indexes = GoodsItemRecordRepository.indexes(configuration)
+  indexes = GoodsItemRecordRepository.indexes(configuration),
+  extraCodecs = Seq(
+    Codecs.playFormatCodec(GetGoodsItemRecordsResult.mongoFormat)
+  )
 ) {
 
   def insert(request: CreateGoodsItemRecordRequest): Future[GoodsItemRecord] = Mdc.preservingMdc {
@@ -92,6 +97,29 @@ class GoodsItemRecordRepository @Inject() (
       )
     ).headOption()
   }
+
+  def get(eori: String, lastUpdated: Option[Instant] = None, page: Int = 0, size: Int = 100000): Future[GetGoodsItemRecordsResult] = Mdc.preservingMdc {
+    collection.aggregate[GetGoodsItemRecordsResult](Seq(
+      Aggregates.`match`(
+        Filters.and(
+          Filters.eq("goodsItem.eori", eori),
+          lastUpdated.map(Filters.gte("metadata.updatedDateTime", _)).getOrElse(Filters.empty())
+        )
+      ),
+      Aggregates.sort(Sorts.ascending("metadata.updatedDateTime")),
+      Aggregates.facet(
+        Facet("totalCount", Aggregates.count("count")),
+        Facet("records", Aggregates.skip(page * size), Aggregates.limit(size))
+      ),
+      Aggregates.unwind("$totalCount"),
+      Aggregates.project(
+        Json.obj(
+          "totalCount" -> "$totalCount.count",
+          "records" -> 1
+        ).toDocument()
+      )
+    )).head()
+  }
 }
 
 object GoodsItemRecordRepository {
@@ -106,6 +134,16 @@ object GoodsItemRecordRepository {
         IndexOptions()
           .name("recordId_idx")
           .unique(true)
+      ),
+      IndexModel(
+        Indexes.ascending("goodsItem.eori"),
+        IndexOptions()
+          .name("eori_idx")
+      ),
+      IndexModel(
+        Indexes.ascending("eori", "metadata.updatedDateTime"),
+        IndexOptions()
+          .name("eori_updatedDateTime_idx")
       ),
       IndexModel(
         Indexes.ascending("recordId", "goodsItem.eori"),
