@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
-import org.mongodb.scala.model.{IndexModel, IndexOptions, Indexes}
+import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, Indexes}
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
@@ -83,6 +83,15 @@ class GoodsItemRecordRepository @Inject() (
       .toFuture()
       .map(_ => goodsItemRecord)
   }
+
+  def getById(eori: String, recordId: String): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
+    collection.find(
+      Filters.and(
+        Filters.eq("recordId", recordId),
+        Filters.eq("goodsItem.eori", eori)
+      )
+    ).headOption()
+  }
 }
 
 object GoodsItemRecordRepository {
@@ -97,6 +106,11 @@ object GoodsItemRecordRepository {
         IndexOptions()
           .name("recordId_idx")
           .unique(true)
+      ),
+      IndexModel(
+        Indexes.ascending("recordId", "goodsItem.eori"),
+        IndexOptions()
+          .name("recordId_eori_idx")
       ),
       IndexModel(
         Indexes.ascending("metadata.updatedDateTime"),
