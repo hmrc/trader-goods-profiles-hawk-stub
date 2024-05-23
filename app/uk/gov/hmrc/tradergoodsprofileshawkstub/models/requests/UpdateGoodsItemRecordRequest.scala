@@ -31,7 +31,7 @@ final case class UpdateGoodsItemRecordRequest(
                                                countryOfOrigin: Option[String],
                                                category: Option[Int],
                                                assessments: Option[Seq[Assessment]],
-                                               supplementaryUnit: Option[String],
+                                               supplementaryUnit: Option[BigDecimal],
                                                measurementUnit: Option[String],
                                                comcodeEffectiveFromDate: Option[Instant],
                                                comcodeEffectiveToDate: Option[Instant]

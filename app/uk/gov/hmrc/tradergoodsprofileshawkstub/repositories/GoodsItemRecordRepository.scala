@@ -18,13 +18,13 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
 import org.mongodb.scala.model._
 import play.api.Configuration
-import play.api.libs.json.Json
+import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.Codecs.JsonOps
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.{Clock, Instant}
@@ -45,7 +45,9 @@ class GoodsItemRecordRepository @Inject() (
   domainFormat = GoodsItemRecord.mongoFormat,
   indexes = GoodsItemRecordRepository.indexes(configuration),
   extraCodecs = Seq(
-    Codecs.playFormatCodec(GetGoodsItemRecordsResult.mongoFormat)
+    Codecs.playFormatCodec(GetGoodsItemRecordsResult.mongoFormat),
+    Codecs.playFormatCodec(Assessment.format),
+    Codecs.playFormatCodec(implicitly[Format[BigDecimal]])
   )
 ) {
 
@@ -119,6 +121,33 @@ class GoodsItemRecordRepository @Inject() (
         ).toDocument()
       )
     )).head()
+  }
+
+  def update(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
+
+    val updates = Seq(
+      Some(Updates.set("goodsItem.actorId", request.actorId)),
+      request.traderRef.map(Updates.set("goodsItem.traderRef", _)),
+      request.comcode.map(Updates.set("goodsItem.comcode", _)),
+      request.goodsDescription.map(Updates.set("goodsItem.goodsDescription", _)),
+      request.countryOfOrigin.map(Updates.set("goodsItem.countryOfOrigin", _)),
+      request.category.map(Updates.set("goodsItem.category", _)),
+      request.assessments.map(Updates.set("goodsItem.assessments", _)),
+      request.supplementaryUnit.map(Updates.set("goodsItem.supplementaryUnit", _)),
+      request.measurementUnit.map(Updates.set("goodsItem.measurementUnit", _)),
+      request.comcodeEffectiveFromDate.map(Updates.set("goodsItem.comcodeEffectiveFromDate", _)),
+      request.comcodeEffectiveToDate.map(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
+      Some(Updates.set("metadata.updatedDateTime", clock.instant()))
+    ).flatten
+
+    collection.findOneAndUpdate(
+      Filters.and(
+        Filters.eq("recordId", request.recordId),
+        Filters.eq("goodsItem.eori", request.eori)
+      ),
+      Updates.combine(updates: _*),
+      FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+    ).headOption()
   }
 }
 
