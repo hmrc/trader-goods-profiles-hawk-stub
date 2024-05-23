@@ -281,7 +281,7 @@ class GoodsItemRecordRepositorySpec
           ),
           metadata = GoodsItemMetadata(
             accreditationStatus = AccreditationStatus.NotRequested,
-            version = 1,
+            version = 2,
             active = true,
             locked = false,
             toReview = false,
@@ -358,7 +358,7 @@ class GoodsItemRecordRepositorySpec
           ),
           metadata = GoodsItemMetadata(
             accreditationStatus = AccreditationStatus.NotRequested,
-            version = 1,
+            version = 2,
             active = true,
             locked = false,
             toReview = false,
@@ -463,10 +463,10 @@ class GoodsItemRecordRepositorySpec
 
   "deactivate" - {
 
-    "must set the `active` property to false and return the old state of the record when the existing record is active" in {
+    "must set the `active` property to false, increment the version, and return the old state of the record when the existing record is active" in {
 
       val record = generateRecord
-      val expectedRecord = record.copy(metadata = record.metadata.copy(active = false))
+      val expectedRecord = record.copy(metadata = record.metadata.copy(active = false, version = 2))
 
       repository.collection.insertOne(record).toFuture().futureValue
 
@@ -478,9 +478,10 @@ class GoodsItemRecordRepositorySpec
       updatedRecord mustEqual expectedRecord
     }
 
-    "must set the `active` property to false and return the old state of the record when the existing record is not active" in {
+    "must set the `active` property to false, increment the version, and return the old state of the record when the existing record is not active" in {
 
       val record = generateRecord.copy(metadata = generateRecord.metadata.copy(active = false))
+      val expectedRecord = record.copy(metadata = record.metadata.copy(version = 2))
 
       repository.collection.insertOne(record).toFuture().futureValue
 
@@ -489,7 +490,7 @@ class GoodsItemRecordRepositorySpec
       result mustEqual record
 
       val updatedRecord = repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue
-      updatedRecord mustEqual record
+      updatedRecord mustEqual expectedRecord
     }
 
     "must return none when there is no existing record" in {

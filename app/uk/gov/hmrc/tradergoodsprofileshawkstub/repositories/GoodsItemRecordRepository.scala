@@ -138,7 +138,8 @@ class GoodsItemRecordRepository @Inject() (
       request.measurementUnit.map(Updates.set("goodsItem.measurementUnit", _)),
       request.comcodeEffectiveFromDate.map(Updates.set("goodsItem.comcodeEffectiveFromDate", _)),
       request.comcodeEffectiveToDate.map(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
-      Some(Updates.set("metadata.updatedDateTime", clock.instant()))
+      Some(Updates.set("metadata.updatedDateTime", clock.instant())),
+      Some(Updates.inc("metadata.version", 1))
     ).flatten
 
     collection.findOneAndUpdate(
@@ -158,7 +159,10 @@ class GoodsItemRecordRepository @Inject() (
         Filters.eq("recordId", recordId),
         Filters.eq("goodsItem.eori", eori)
       ),
-      Updates.set("metadata.active", false)
+      Updates.combine(
+        Updates.set("metadata.active", false),
+        Updates.inc("metadata.version", 1)
+      )
     ).headOption()
   }
 }
