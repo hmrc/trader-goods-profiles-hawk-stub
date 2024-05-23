@@ -259,7 +259,6 @@ class GoodsItemRecordRepositorySpec
             actorId = "anotherActorId",
             traderRef = "anotherTraderRef",
             comcode = "anotherComcode",
-            accreditationStatus = AccreditationStatus.NotRequested,
             goodsDescription = "anotherGoodsDescription",
             countryOfOrigin = "anotherCountryOfOrigin",
             category = 2,
@@ -281,6 +280,7 @@ class GoodsItemRecordRepositorySpec
             comcodeEffectiveToDate = Some(clock.instant().plus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.SECONDS))
           ),
           metadata = GoodsItemMetadata(
+            accreditationStatus = AccreditationStatus.NotRequested,
             version = 1,
             active = true,
             locked = false,
@@ -336,7 +336,6 @@ class GoodsItemRecordRepositorySpec
             actorId = "anotherActorId",
             traderRef = "traderRef",
             comcode = "comcode",
-            accreditationStatus = AccreditationStatus.NotRequested,
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = 1,
@@ -358,6 +357,7 @@ class GoodsItemRecordRepositorySpec
             comcodeEffectiveToDate = Some(clock.instant().plus(1, ChronoUnit.DAYS))
           ),
           metadata = GoodsItemMetadata(
+            accreditationStatus = AccreditationStatus.NotRequested,
             version = 1,
             active = true,
             locked = false,
@@ -506,7 +506,6 @@ class GoodsItemRecordRepositorySpec
       actorId = "actorId",
       traderRef = "traderRef",
       comcode = "comcode",
-      accreditationStatus = AccreditationStatus.NotRequested,
       goodsDescription = "goodsDescription",
       countryOfOrigin = "countryOfOrigin",
       category = 1,
@@ -528,6 +527,7 @@ class GoodsItemRecordRepositorySpec
       comcodeEffectiveToDate = Some(clock.instant().plus(1, ChronoUnit.DAYS))
     ),
     metadata = GoodsItemMetadata(
+      accreditationStatus = AccreditationStatus.NotRequested,
       version = 1,
       active = true,
       locked = false,

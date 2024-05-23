@@ -22,6 +22,7 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import java.time.Instant
 
 final case class GoodsItemMetadata(
+                                    accreditationStatus: AccreditationStatus,
                                     version: Int,
                                     active: Boolean,
                                     locked: Boolean,

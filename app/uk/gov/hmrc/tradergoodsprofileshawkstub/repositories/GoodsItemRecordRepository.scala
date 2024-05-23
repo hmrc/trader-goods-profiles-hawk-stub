@@ -61,7 +61,6 @@ class GoodsItemRecordRepository @Inject() (
         actorId = request.actorId,
         traderRef = request.traderRef,
         comcode = request.comcode,
-        accreditationStatus = AccreditationStatus.NotRequested,
         goodsDescription = request.goodsDescription,
         countryOfOrigin = request.countryOfOrigin,
         category = request.category,
@@ -72,7 +71,8 @@ class GoodsItemRecordRepository @Inject() (
         comcodeEffectiveToDate = request.comcodeEffectiveToDate
       ),
       metadata = GoodsItemMetadata(
-       version = 1,
+        accreditationStatus = AccreditationStatus.NotRequested,
+        version = 1,
         active = true,
         locked = false,
         toReview = false,

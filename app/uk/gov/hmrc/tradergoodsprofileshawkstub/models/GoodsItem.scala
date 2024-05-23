@@ -26,7 +26,6 @@ final case class GoodsItem(
                             actorId: String,
                             traderRef: String,
                             comcode: String,
-                            accreditationStatus: AccreditationStatus,
                             goodsDescription: String,
                             countryOfOrigin: String,
                             category: Int,
