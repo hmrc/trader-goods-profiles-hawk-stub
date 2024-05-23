@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
+import org.apache.pekko.Done
 import org.mongodb.scala.model._
 import play.api.Configuration
 import play.api.libs.json.{Format, Json}
@@ -147,6 +148,17 @@ class GoodsItemRecordRepository @Inject() (
       ),
       Updates.combine(updates: _*),
       FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+    ).headOption()
+  }
+
+  def deactivate(eori: String, recordId: String): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
+
+    collection.findOneAndUpdate(
+      Filters.and(
+        Filters.eq("recordId", recordId),
+        Filters.eq("goodsItem.eori", eori)
+      ),
+      Updates.set("metadata.active", false)
     ).headOption()
   }
 }

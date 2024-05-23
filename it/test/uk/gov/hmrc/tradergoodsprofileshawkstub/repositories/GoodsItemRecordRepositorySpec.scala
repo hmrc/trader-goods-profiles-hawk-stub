@@ -461,6 +461,44 @@ class GoodsItemRecordRepositorySpec
     }
   }
 
+  "deactivate" - {
+
+    "must set the `active` property to false and return the old state of the record when the existing record is active" in {
+
+      val record = generateRecord
+      val expectedRecord = record.copy(metadata = record.metadata.copy(active = false))
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      val result = repository.deactivate(record.goodsItem.eori, record.recordId).futureValue.value
+
+      result mustEqual record
+
+      val updatedRecord = repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue
+      updatedRecord mustEqual expectedRecord
+    }
+
+    "must set the `active` property to false and return the old state of the record when the existing record is not active" in {
+
+      val record = generateRecord.copy(metadata = generateRecord.metadata.copy(active = false))
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      val result = repository.deactivate(record.goodsItem.eori, record.recordId).futureValue.value
+
+      result mustEqual record
+
+      val updatedRecord = repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue
+      updatedRecord mustEqual record
+    }
+
+    "must return none when there is no existing record" in {
+
+      val result = repository.deactivate("eori", UUID.randomUUID().toString).futureValue
+      result mustBe None
+    }
+  }
+
   private def generateRecord = GoodsItemRecord(
     recordId = UUID.randomUUID().toString,
     goodsItem = GoodsItem(
