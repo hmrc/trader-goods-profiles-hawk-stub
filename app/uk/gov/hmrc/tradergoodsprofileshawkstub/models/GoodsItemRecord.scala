@@ -50,6 +50,35 @@ final case class GoodsItemRecord(
     "createdDateTime" -> metadata.createdDateTime,
     "updatedDateTime" -> metadata.updatedDateTime
   ).fields.filterNot(_._2 == JsNull).toMap)
+
+  def toGetRecordResponse: JsObject = Json.toJsObject(Json.obj(
+    "recordId" -> recordId,
+    "eori" -> goodsItem.eori,
+    "actorId" -> goodsItem.actorId,
+    "traderRef" -> goodsItem.traderRef,
+    "comcode" -> goodsItem.comcode,
+    "accreditationStatus" -> metadata.accreditationStatus,
+    "goodsDescription" -> goodsItem.goodsDescription,
+    "countryOfOrigin" -> goodsItem.countryOfOrigin,
+    "category" -> goodsItem.category,
+    "assessments" -> goodsItem.assessments,
+    "supplementaryUnit" -> goodsItem.supplementaryUnit,
+    "measurementUnit" -> goodsItem.measurementUnit,
+    "comcodeEffectiveFromDate" -> goodsItem.comcodeEffectiveFromDate,
+    "comcodeEffectiveToDate" -> goodsItem.comcodeEffectiveToDate,
+    "version" -> metadata.version,
+    "active" -> metadata.active,
+    "toReview" -> metadata.toReview,
+    "reviewReason" -> metadata.reviewReason,
+    "declarable" -> metadata.declarable,
+    "ukimsNumber" -> metadata.ukimsNumber,
+    "nirmsNumber" -> metadata.nirmsNumber,
+    "niphlNumber" -> metadata.niphlNumber,
+    "locked" -> metadata.locked,
+    "srcSystemName" -> metadata.srcSystemName,
+    "createdDateTime" -> metadata.createdDateTime,
+    "updatedDateTime" -> metadata.updatedDateTime
+  ).fields.filterNot(_._2 == JsNull).toMap)
 }
 
 object GoodsItemRecord {
