@@ -34,6 +34,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
@@ -74,7 +75,7 @@ class GoodsItemGoodsItemRecordsControllerSpec
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockRepository)
+    Mockito.reset(mockRepository, mockUuidService)
   }
 
 
@@ -431,6 +432,257 @@ class GoodsItemGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockRepository, never).insert(any)
+    }
+  }
+
+  "getRecord" - {
+
+    val correlationId = UUID.randomUUID().toString
+    val forwardedHost = "forwarded-for"
+    val record = generateRecord
+
+    "must return a response with a single element when a result is returned" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.getById(any, any)).thenReturn(Future.successful(Some(record)))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+
+      val expectedResponse = Json.toJson(GetGoodsItemsResponse(
+        goodsItemRecords = Seq(record),
+        pagination = Pagination(totalRecords = 1, page = 0, size = 1)
+      ))
+
+      contentAsJson(result) mustEqual expectedResponse
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository).getById(record.goodsItem.eori, record.recordId)
+    }
+
+    "must return an empty response when a result is not returned" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+
+      val expectedResponse = Json.toJson(GetGoodsItemsResponse(
+        goodsItemRecords = Seq.empty,
+        pagination = Pagination(totalRecords = 0, page = 0, size = 1)
+      ))
+
+      contentAsJson(result) mustEqual expectedResponse
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository).getById(record.goodsItem.eori, record.recordId)
+    }
+
+    "must return an error when there is no correlation-id header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
+        .withHeaders(
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 001, message: Invalid Header"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).getById(any, any)
+    }
+
+    "must return an error when there is no forwarded-host header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 005, message: Invalid Header"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result) mustBe empty
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).getById(any, any)
+    }
+
+    "must return an error when there is no date header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 002, message: Invalid Header"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).getById(any, any)
+    }
+
+    "must return an error when there is an invalid date header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> "invalid",
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 002, message: Invalid Header"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).getById(any, any)
+    }
+
+    "must return forbidden with no body when there is no authorization header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate
+        )
+
+      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual FORBIDDEN
+
+      verify(mockRepository, never).getById(any, any)
+    }
+
+    "must return forbidden with no body when htere is an invalid authorization header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-other-token"
+        )
+
+      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual FORBIDDEN
+
+      verify(mockRepository, never).getById(any, any)
     }
   }
 

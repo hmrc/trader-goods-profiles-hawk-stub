@@ -19,8 +19,6 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 import cats.data.EitherNec
 import cats.syntax.all._
 import org.everit.json.schema.Schema
-import org.everit.json.schema.loader.SchemaLoader
-import org.json.{JSONObject, JSONTokener}
 import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.{Configuration, Environment}
@@ -28,6 +26,7 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.ValidatedHeaders
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
@@ -58,7 +57,7 @@ class GoodsItemRecordsController @Inject()(
 
     val result = for {
       _                <- validateAuthorization(request)
-      validatedHeaders <- validateHeaders(request)
+      validatedHeaders <- validatePostHeaders(request)
       body             <- validateCreateGoodsRecordItemRequest(request)
     } yield {
 
@@ -79,8 +78,26 @@ class GoodsItemRecordsController @Inject()(
   def getRecords(eori: String): Action[AnyContent] =
     Action(NotImplemented)
 
-  def getRecord(eori: String, recordId: String): Action[AnyContent] =
-    Action(NotImplemented)
+  def getRecord(eori: String, recordId: String): Action[AnyContent] = Action.async { implicit request =>
+
+    val result = for {
+      _                <- validateAuthorization(request)
+      validatedHeaders <- validateGetHeaders(request)
+    } yield {
+
+      goodsItemRecordRepository.getById(eori, recordId).map { record =>
+        val pagination = Pagination(totalRecords = record.size.toInt, page = 0, size = 1)
+        Ok(Json.toJson(GetGoodsItemsResponse(record.toSeq, pagination)))
+          .withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+      }
+    }
+
+    result.leftMap(Future.successful).merge
+  }
 
   def updateRecord(): Action[AnyContent] =
     Action(NotImplemented)
@@ -109,13 +126,42 @@ class GoodsItemRecordsController @Inject()(
       .filter(_ == "application/json")
       .toRightNec("error: 003, message: Invalid Header")
 
-  private def validateHeaders(request: Request[_]): Either[Result, ValidatedHeaders] = {
+  private def validatePostHeaders(request: Request[_]): Either[Result, ValidatedHeaders] = {
     (
       validateCorrelationId(request),
       validateForwardedHost(request),
       validateDate(request),
       validateContentType(request)
     ).parMapN { (correlationId, forwardedHost, _, _) =>
+      ValidatedHeaders(correlationId, forwardedHost)
+    }.leftMap { errors =>
+
+      val correlationId = request.headers.get("X-Correlation-Id").getOrElse(uuidService.generate())
+      val forwardedHost = request.headers.get("X-Forwarded-Host")
+
+      val headers = Seq(
+        Some("X-Correlation-Id" -> correlationId),
+        forwardedHost.map("X-Forwarded-Host" -> _),
+        Some("Content-Type" -> "application/json")
+      ).flatten
+
+      BadRequest(Json.toJson(ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = errors.toList
+      ))).withHeaders(headers: _*)
+    }
+  }
+
+  private def validateGetHeaders(request: Request[_]): Either[Result, ValidatedHeaders] = {
+    (
+      validateCorrelationId(request),
+      validateForwardedHost(request),
+      validateDate(request)
+    ).parMapN { (correlationId, forwardedHost, _) =>
       ValidatedHeaders(correlationId, forwardedHost)
     }.leftMap { errors =>
 
