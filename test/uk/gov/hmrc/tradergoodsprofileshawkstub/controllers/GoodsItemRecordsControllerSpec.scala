@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 
 import org.mockito.ArgumentMatchers.any
@@ -27,7 +43,7 @@ import java.time.{Clock, Instant, ZoneId, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.Future
 
-class GoodsItemRecordsControllerSpec
+class GoodsItemGoodsItemRecordsControllerSpec
   extends AnyFreeSpec
     with Matchers
     with GuiceOneAppPerSuite
@@ -85,7 +101,7 @@ class GoodsItemRecordsControllerSpec
 
     "must create a record and return the relevant response when given a valid request" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -111,7 +127,7 @@ class GoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is no correlation-id header" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Forwarded-Host" -> forwardedHost,
           "Content-Type" -> "application/json",
@@ -147,7 +163,7 @@ class GoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is no forwarded-host header" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "Content-Type" -> "application/json",
@@ -183,7 +199,7 @@ class GoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is no date header" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -219,7 +235,7 @@ class GoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is an invalid date header" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -256,7 +272,7 @@ class GoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is no content-type header" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord())
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -292,7 +308,7 @@ class GoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is an invalid content-type header" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord())
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -327,13 +343,56 @@ class GoodsItemRecordsControllerSpec
       verify(mockRepository, never).insert(any)
     }
 
+    "must not create a record and return an error when there are json schema violations" in {
+
+      val invalidRequestBody = requestBody.copy(
+        eori = "eori12345678901234567890",
+        actorId = "actorId12345678901234567890"
+      )
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord()).withBody(Json.toJson(invalidRequestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Invalid message : Bad Request",
+        source = "Json Validation",
+        detail = Seq(
+          "$.actorId: expected maxLength: 17, actual: 27",
+          "$.eori: expected maxLength: 17, actual: 24"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).insert(any)
+    }
+
     "must not create a record and return an error when there is no profile matching the eori" ignore {
 
     }
 
     "must not create a record and return forbidden with no body when there is no authorization header" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord())
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -345,17 +404,6 @@ class GoodsItemRecordsControllerSpec
       when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
-      val expectedResponse = ErrorResponse(
-        correlationId = correlationId,
-        timestamp = clock.instant(),
-        errorCode = "400",
-        errorMessage = "Bad Request",
-        source = "BACKEND",
-        detail = Seq(
-          "error: 003, message: Invalid Header"
-        )
-      )
-
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
@@ -365,7 +413,7 @@ class GoodsItemRecordsControllerSpec
 
     "must not create a record and return forbidden with no body when there is an invalid authorization header" in {
 
-      val request = FakeRequest(routes.RecordsController.createRecord())
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -378,17 +426,6 @@ class GoodsItemRecordsControllerSpec
       when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
-      val expectedResponse = ErrorResponse(
-        correlationId = correlationId,
-        timestamp = clock.instant(),
-        errorCode = "400",
-        errorMessage = "Bad Request",
-        source = "BACKEND",
-        detail = Seq(
-          "error: 003, message: Invalid Header"
-        )
-      )
-
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
@@ -400,12 +437,12 @@ class GoodsItemRecordsControllerSpec
   private def generateRecord = GoodsItemRecord(
     recordId = UUID.randomUUID().toString,
     goodsItem = GoodsItem(
-      eori = "eori",
-      actorId = "actorId",
+      eori = "eori1234567890",
+      actorId = "actorId1234567",
       traderRef = "traderRef",
       comcode = "comcode",
       goodsDescription = "goodsDescription",
-      countryOfOrigin = "countryOfOrigin",
+      countryOfOrigin = "GB",
       category = 1,
       assessments = Seq(
         Assessment(
@@ -413,7 +450,7 @@ class GoodsItemRecordsControllerSpec
           primaryCategory = Some(2),
           condition = Some(Condition(
             `type` = Some("type"),
-            conditionId = Some("conditionId"),
+            conditionId = Some("1234567890"),
             conditionDescription = Some("conditionDescription"),
             conditionTraderText = Some("conditionTraderText")
           ))
@@ -421,8 +458,8 @@ class GoodsItemRecordsControllerSpec
       ),
       supplementaryUnit = Some(BigDecimal(2.5)),
       measurementUnit = Some("measurementUnit"),
-      comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
-      comcodeEffectiveToDate = Some(clock.instant().plus(1, ChronoUnit.DAYS))
+      comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS),
+      comcodeEffectiveToDate = Some(clock.instant().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
     ),
     metadata = GoodsItemMetadata(
       accreditationStatus = AccreditationStatus.NotRequested,

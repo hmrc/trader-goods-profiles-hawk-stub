@@ -18,15 +18,18 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 
 import cats.data.EitherNec
 import cats.syntax.all._
-import play.api.Configuration
+import org.everit.json.schema.Schema
+import org.everit.json.schema.loader.SchemaLoader
+import org.json.{JSONObject, JSONTokener}
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, ControllerComponents, Request, Result}
+import play.api.mvc._
+import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.ValidatedHeaders
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
-import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
+import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
 import java.time.Clock
 import java.time.format.DateTimeFormatter
@@ -40,20 +43,24 @@ class GoodsItemRecordsController @Inject()(
                                             goodsItemRecordRepository: GoodsItemRecordRepository,
                                             uuidService: UuidService,
                                             clock: Clock,
-                                            configuration: Configuration
+                                            configuration: Configuration,
+                                            environment: Environment,
+                                            schemaValidationService: SchemaValidationService
                                           )(implicit ec: ExecutionContext) extends BackendBaseController {
 
   private val expectedAuthHeader: String = configuration.get[String]("expected-auth-header")
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
+
+  // Using `get` here as we want to throw an exception on startup if this can't be found
+  private val createRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-create-record-request-v0.7.json").get
 
   def createRecord(): Action[AnyContent] = Action.async { implicit request =>
 
     val result = for {
       _                <- validateAuthorization(request)
       validatedHeaders <- validateHeaders(request)
+      body             <- validateCreateGoodsRecordItemRequest(request)
     } yield {
-
-      val body = request.body.asJson.get.as[CreateGoodsItemRecordRequest]
 
       goodsItemRecordRepository.insert(body).map { goodsItemRecord =>
 
@@ -102,7 +109,7 @@ class GoodsItemRecordsController @Inject()(
       .filter(_ == "application/json")
       .toRightNec("error: 003, message: Invalid Header")
 
-  private def validateHeaders(request: Request[_]): Either[Result, ValidatedHeaders] =
+  private def validateHeaders(request: Request[_]): Either[Result, ValidatedHeaders] = {
     (
       validateCorrelationId(request),
       validateForwardedHost(request),
@@ -130,6 +137,38 @@ class GoodsItemRecordsController @Inject()(
         detail = errors.toList
       ))).withHeaders(headers: _*)
     }
+  }
+
+  private def validateCreateGoodsRecordItemRequest(request: Request[AnyContent]): Either[Result, CreateGoodsItemRecordRequest] = {
+
+    val json = request.body.asJson.get
+    val validationErrors = schemaValidationService.validate(createRecordSchema, json)
+
+    if (validationErrors.isEmpty) {
+      Right(json.as[CreateGoodsItemRecordRequest])
+    } else Left {
+
+      val correlationId = request.headers.get("X-Correlation-Id").getOrElse(uuidService.generate())
+      val forwardedHost = request.headers.get("X-Forwarded-Host")
+
+      val headers = Seq(
+        Some("X-Correlation-Id" -> correlationId),
+        forwardedHost.map("X-Forwarded-Host" -> _),
+        Some("Content-Type" -> "application/json")
+      ).flatten
+
+      BadRequest(Json.toJson(ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Invalid message : Bad Request",
+        source = "Json Validation",
+        detail = validationErrors.map { error =>
+          s"${error.key}: ${error.message}"
+        }
+      ))).withHeaders(headers: _*)
+    }
+  }
 }
 
 object GoodsItemRecordsController {
