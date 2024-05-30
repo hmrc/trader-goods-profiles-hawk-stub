@@ -23,14 +23,14 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
-import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.ValidatedHeaders
+import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.{ValidatedHeaders, ValidatedParams}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
-import java.time.Clock
+import java.time.{Clock, Instant}
 import java.time.format.DateTimeFormatter
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,10 +48,13 @@ class GoodsItemRecordsController @Inject()(
                                           )(implicit ec: ExecutionContext) extends BackendBaseController {
 
   private val expectedAuthHeader: String = configuration.get[String]("expected-auth-header")
-  private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
+  private val defaultSize: Int = configuration.get[Int]("goods-item-records.default-size")
+  private val maxSize: Int = configuration.get[Int]("goods-item-records.max-size")
 
   // Using `get` here as we want to throw an exception on startup if this can't be found
   private val createRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-create-record-request-v0.7.json").get
+  private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
+  private val iso8601Formatter = DateTimeFormatter.ISO_DATE_TIME
 
   def createRecord(): Action[AnyContent] = Action.async { implicit request =>
 
@@ -75,8 +78,30 @@ class GoodsItemRecordsController @Inject()(
     result.leftMap(Future.successful).merge
   }
 
-  def getRecords(eori: String): Action[AnyContent] =
-    Action(NotImplemented)
+  def getRecords(eori: String): Action[AnyContent] = Action.async { implicit request =>
+
+    val result = for {
+      _                <- validateAuthorization(request)
+      validatedHeaders <- validateGetHeaders(request)
+      validatedParams  <- validateGetParameters(request)
+    } yield {
+
+      val page = validatedParams.page.getOrElse(0)
+      val size = validatedParams.size.getOrElse(defaultSize)
+
+      goodsItemRecordRepository.get(eori, validatedParams.lastUpdatedDate, page, size).map { result =>
+        val pagination = Pagination(totalRecords = result.totalCount.toInt, page, size)
+        Ok(Json.toJson(GetGoodsItemsResponse(result.records, pagination)))
+          .withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+      }
+    }
+
+    result.leftMap(Future.successful).merge
+  }
 
   def getRecord(eori: String, recordId: String): Action[AnyContent] = Action.async { implicit request =>
 
@@ -185,6 +210,54 @@ class GoodsItemRecordsController @Inject()(
     }
   }
 
+  private def validatePage(request: Request[_]): EitherNec[String, Option[Int]] =
+    request.getQueryString("page").traverse { string =>
+      string.toIntOption
+        .filter(_ >= 0)
+        .toRightNec("error: 029, message: Invalid Request Parameter")
+    }
+
+  private def validateSize(request: Request[_]): EitherNec[String, Option[Int]] =
+    request.getQueryString("size").traverse { string =>
+      string.toIntOption
+        .filter(s => s >= 0 && s < maxSize)
+        .toRightNec("error: 030, message: Invalid Request Parameter")
+    }
+
+  private def validateLastUpdatedDate(request: Request[_]): EitherNec[String, Option[Instant]] =
+    request.getQueryString("lastUpdatedDate").traverse { string =>
+      Try(Instant.from(iso8601Formatter.parse(string)))
+        .toOption
+        .toRightNec("error: 028, message: Invalid Request Parameter")
+    }
+
+  private def validateGetParameters(request: Request[_]): Either[Result, ValidatedParams] = {
+    (
+      validatePage(request),
+      validateSize(request),
+      validateLastUpdatedDate(request)
+    ).parMapN(ValidatedParams).leftMap { errors =>
+
+      val correlationId = request.headers.get("X-Correlation-Id").getOrElse(uuidService.generate())
+      val forwardedHost = request.headers.get("X-Forwarded-Host")
+
+      val headers = Seq(
+        Some("X-Correlation-Id" -> correlationId),
+        forwardedHost.map("X-Forwarded-Host" -> _),
+        Some("Content-Type" -> "application/json")
+      ).flatten
+
+      BadRequest(Json.toJson(ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = errors.toList
+      ))).withHeaders(headers: _*)
+    }
+  }
+
   private def validateCreateGoodsRecordItemRequest(request: Request[AnyContent]): Either[Result, CreateGoodsItemRecordRequest] = {
 
     val json = request.body.asJson.get
@@ -220,4 +293,6 @@ class GoodsItemRecordsController @Inject()(
 object GoodsItemRecordsController {
 
   final case class ValidatedHeaders(correlationId: String, forwardedHost: String)
+
+  final case class ValidatedParams(page: Option[Int], size: Option[Int], lastUpdatedDate: Option[Instant])
 }

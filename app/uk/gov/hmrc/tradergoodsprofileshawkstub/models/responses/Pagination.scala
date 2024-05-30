@@ -39,6 +39,6 @@ object Pagination {
       currentPage = page,
       totalPages = totalRecords / size,
       nextPage = Option.when(page < (totalRecords / size) - 1)(page + 1),
-      previousPage = Option.when(page > 0)(page - 1)
+      previousPage = Option.when(page > 0)(page.min(totalRecords / size) - 1)
     )
 }

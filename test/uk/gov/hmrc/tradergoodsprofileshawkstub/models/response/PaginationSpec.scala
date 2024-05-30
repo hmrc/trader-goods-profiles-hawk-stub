@@ -49,5 +49,18 @@ class PaginationSpec extends AnyFreeSpec with Matchers {
 
       Pagination(totalRecords = 10, page = 9, size = 1) mustEqual expected
     }
+
+    "must return the last valid page for previousPage if page is greater than the last page" in {
+
+      val expected = Pagination(
+        totalRecords = 1,
+        currentPage = 9,
+        totalPages = 1,
+        nextPage = None,
+        previousPage = Some(0)
+      )
+
+      Pagination(totalRecords = 1, page = 9, size = 1) mustEqual expected
+    }
   }
 }
