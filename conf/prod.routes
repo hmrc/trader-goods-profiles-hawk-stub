@@ -1,10 +1,10 @@
 # Add all the application routes to the app.routes file
 
-POST       /tgp/createrecord/v1                   uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.RecordsController.createRecord()
-GET        /tgp/getrecords/v1/:eori               uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.RecordsController.getRecords(eori: String)
-GET        /tgp/getrecords/v1/:eori/:recordId     uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.RecordsController.getRecord(eori: String, recordId: String)
-PUT        /tgp/updaterecord/v1                   uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.RecordsController.updateRecord()
-PUT        /tgp/removerecord/v1                   uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.RecordsController.removeRecord()
+POST       /tgp/createrecord/v1                   uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.createRecord()
+GET        /tgp/getrecords/v1/:eori               uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.getRecords(eori: String)
+GET        /tgp/getrecords/v1/:eori/:recordId     uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.getRecord(eori: String, recordId: String)
+PUT        /tgp/updaterecord/v1                   uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.updateRecord()
+PUT        /tgp/removerecord/v1                   uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.removeRecord()
 
 PUT        /tgp/maintainprofile/v1                uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.ProfilesController.maintainProfile()
 
