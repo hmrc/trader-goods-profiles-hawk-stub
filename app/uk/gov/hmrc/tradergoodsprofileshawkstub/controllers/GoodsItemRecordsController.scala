@@ -84,7 +84,7 @@ class GoodsItemRecordsController @Inject()(
           errorCode = "400",
           errorMessage = "Bad Request",
           source = "BACKEND",
-          detail = Seq("error: 010, message: Invalid Request Parameter") // What should this error code be?
+          detail = Seq("error: 010, message: Invalid Request Parameter")
         )))
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
@@ -162,7 +162,7 @@ class GoodsItemRecordsController @Inject()(
             errorCode = "400",
             errorMessage = "Bad Request",
             source = "BACKEND",
-            detail = Seq("error: XXX, message: Record does not exist") // What should this error code be?
+            detail = Seq("error: 026, message: Invalid Request Parameter")
           )))
         }.withHeaders(
           "X-Correlation-ID" -> validatedHeaders.correlationId,

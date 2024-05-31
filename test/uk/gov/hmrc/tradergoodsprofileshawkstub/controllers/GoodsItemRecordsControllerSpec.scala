@@ -1432,8 +1432,7 @@ class GoodsItemRecordsControllerSpec
         errorMessage = "Bad Request",
         source = "BACKEND",
         detail = Seq(
-          // TODO what should this actually be?
-          "error: XXX, message: Record does not exist"
+          "error: 026, message: Invalid Request Parameter"
         )
       )
 
