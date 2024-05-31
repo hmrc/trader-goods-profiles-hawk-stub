@@ -28,7 +28,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.DuplicateEoriAndTraderRefException
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
 import java.time.format.DateTimeFormatter
@@ -168,19 +168,46 @@ class GoodsItemRecordsController @Inject()(
           "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
           "Content-Type" -> "application/json"
         )
-      }.recover { case DuplicateEoriAndTraderRefException =>
-        BadRequest(Json.toJson(ErrorResponse(
-          correlationId = validatedHeaders.correlationId,
-          timestamp = clock.instant(),
-          errorCode = "400",
-          errorMessage = "Bad Request",
-          source = "BACKEND",
-          detail = Seq("error: 010, message: Invalid Request Parameter") // What should this error code be?
-        ))).withHeaders(
-          "X-Correlation-ID" -> validatedHeaders.correlationId,
-          "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
-          "Content-Type" -> "application/json"
-        )
+      }.recover {
+        case DuplicateEoriAndTraderRefException =>
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 010, message: Invalid Request Parameter")
+          ))).withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+        case RecordLockedException =>
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 027, message: Invalid Request")
+          ))).withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+        case RecordInactiveException =>
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 031, message: Invalid Request")
+          ))).withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
       }
     }
 

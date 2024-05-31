@@ -16,17 +16,19 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
-import org.mongodb.scala.{MongoCommandException, MongoException, MongoWriteException}
+import org.apache.pekko.Done
+import org.mongodb.scala.{ClientSession, MongoCommandException, MongoException, MongoWriteException}
 import org.mongodb.scala.model._
 import play.api.Configuration
 import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.Codecs.JsonOps
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.mongo.transaction.{TransactionConfiguration, Transactions}
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.DuplicateEoriAndTraderRefException
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.{Clock, Instant}
@@ -38,7 +40,7 @@ import scala.util.control.NoStackTrace
 
 @Singleton
 class GoodsItemRecordRepository @Inject() (
-                                            mongoComponent: MongoComponent,
+                                            override val mongoComponent: MongoComponent,
                                             configuration: Configuration,
                                             uuidService: UuidService,
                                             clock: Clock
@@ -52,7 +54,9 @@ class GoodsItemRecordRepository @Inject() (
     Codecs.playFormatCodec(Assessment.format),
     Codecs.playFormatCodec(implicitly[Format[BigDecimal]])
   )
-) {
+) with Transactions {
+
+  private implicit val tc: TransactionConfiguration = TransactionConfiguration.strict
 
   def insert(request: CreateGoodsItemRecordRequest): Future[GoodsItemRecord] = Mdc.preservingMdc {
 
@@ -130,34 +134,46 @@ class GoodsItemRecordRepository @Inject() (
   }
 
   def update(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
+    withSessionAndTransaction { session =>
+      checkRecordState(session, request.recordId).flatMap { _ =>
 
-    val updates = Seq(
-      Some(Updates.set("goodsItem.actorId", request.actorId)),
-      request.traderRef.map(Updates.set("goodsItem.traderRef", _)),
-      request.comcode.map(Updates.set("goodsItem.comcode", _)),
-      request.goodsDescription.map(Updates.set("goodsItem.goodsDescription", _)),
-      request.countryOfOrigin.map(Updates.set("goodsItem.countryOfOrigin", _)),
-      request.category.map(Updates.set("goodsItem.category", _)),
-      request.assessments.map(Updates.set("goodsItem.assessments", _)),
-      request.supplementaryUnit.map(Updates.set("goodsItem.supplementaryUnit", _)),
-      request.measurementUnit.map(Updates.set("goodsItem.measurementUnit", _)),
-      request.comcodeEffectiveFromDate.map(Updates.set("goodsItem.comcodeEffectiveFromDate", _)),
-      request.comcodeEffectiveToDate.map(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
-      Some(Updates.set("metadata.updatedDateTime", clock.instant())),
-      Some(Updates.inc("metadata.version", 1))
-    ).flatten
+        val updates = Seq(
+          Some(Updates.set("goodsItem.actorId", request.actorId)),
+          request.traderRef.map(Updates.set("goodsItem.traderRef", _)),
+          request.comcode.map(Updates.set("goodsItem.comcode", _)),
+          request.goodsDescription.map(Updates.set("goodsItem.goodsDescription", _)),
+          request.countryOfOrigin.map(Updates.set("goodsItem.countryOfOrigin", _)),
+          request.category.map(Updates.set("goodsItem.category", _)),
+          request.assessments.map(Updates.set("goodsItem.assessments", _)),
+          request.supplementaryUnit.map(Updates.set("goodsItem.supplementaryUnit", _)),
+          request.measurementUnit.map(Updates.set("goodsItem.measurementUnit", _)),
+          request.comcodeEffectiveFromDate.map(Updates.set("goodsItem.comcodeEffectiveFromDate", _)),
+          request.comcodeEffectiveToDate.map(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
+          Some(Updates.set("metadata.updatedDateTime", clock.instant())),
+          Some(Updates.inc("metadata.version", 1))
+        ).flatten
 
-    collection.findOneAndUpdate(
-      Filters.and(
-        Filters.eq("recordId", request.recordId),
-        Filters.eq("goodsItem.eori", request.eori)
-      ),
-      Updates.combine(updates: _*),
-      FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
-    ).headOption().recoverWith { case e: MongoCommandException if isDuplicateKeyException(e) =>
-      Future.failed(DuplicateEoriAndTraderRefException)
+        collection.findOneAndUpdate(
+          session,
+          Filters.and(
+            Filters.eq("recordId", request.recordId),
+            Filters.eq("goodsItem.eori", request.eori)
+          ),
+          Updates.combine(updates: _*),
+          FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+        ).headOption().recoverWith { case e: MongoCommandException if isDuplicateKeyException(e) =>
+          Future.failed(DuplicateEoriAndTraderRefException)
+        }
+      }
     }
   }
+
+  private def checkRecordState(session: ClientSession, recordId: String): Future[Done] =
+    collection.find(session, Filters.eq("recordId", recordId)).headOption().flatMap {
+      case Some(record) if record.metadata.locked  => Future.failed(RecordLockedException)
+      case Some(record) if !record.metadata.active => Future.failed(RecordInactiveException)
+      case _                                       => Future.successful(Done)
+    }
 
   def deactivate(eori: String, recordId: String): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
 
@@ -221,4 +237,6 @@ object GoodsItemRecordRepository {
   }
 
   final case object DuplicateEoriAndTraderRefException extends Throwable with NoStackTrace
+  final case object RecordLockedException extends Throwable with NoStackTrace
+  final case object RecordInactiveException extends Throwable with NoStackTrace
 }

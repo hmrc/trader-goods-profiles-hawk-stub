@@ -37,7 +37,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.DuplicateEoriAndTraderRefException
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.format.DateTimeFormatter
@@ -1482,12 +1482,78 @@ class GoodsItemRecordsControllerSpec
       verify(mockRepository).update(requestBody)
     }
 
-    "must not update a record and return an error when the record is inactive" ignore {
-      // TODO
+    "must not update a record and return an error when the record is inactive" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.update(any)).thenReturn(Future.failed(RecordInactiveException))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 031, message: Invalid Request"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository).update(requestBody)
     }
 
-    "must not update a record and return an error when the record is locked" ignore {
-      // TODO
+    "must not update a record and return an error when the record is locked" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.update(any)).thenReturn(Future.failed(RecordLockedException))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 027, message: Invalid Request"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository).update(requestBody)
     }
 
     "must not update a record and return an error when there is no correlation-id header" in {
