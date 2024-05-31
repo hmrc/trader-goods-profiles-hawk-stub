@@ -34,7 +34,7 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.play.bootstrap.dispatchers.MDCPropagatingExecutorService
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
@@ -606,14 +606,15 @@ class GoodsItemRecordRepositorySpec
 
   "deactivate" - {
 
-    "must set the `active` property to false, increment the version, and return the old state of the record when the existing record is active" in {
+    "must set the `active` property to false, increment the version, set the actorId, and return the old state of the record when the existing record is active" in {
 
       val record = generateRecord
-      val expectedRecord = record.copy(metadata = record.metadata.copy(active = false, version = 2))
+      val expectedRecord = record.copy(metadata = record.metadata.copy(active = false, version = 2), goodsItem = record.goodsItem.copy(actorId = "newActorId"))
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      val result = repository.deactivate(record.goodsItem.eori, record.recordId).futureValue.value
+      val request = RemoveGoodsItemRecordRequest(record.goodsItem.eori, record.recordId, "newActorId")
+      val result = repository.deactivate(request).futureValue.value
 
       result mustEqual record
 
@@ -621,14 +622,15 @@ class GoodsItemRecordRepositorySpec
       updatedRecord mustEqual expectedRecord
     }
 
-    "must set the `active` property to false, increment the version, and return the old state of the record when the existing record is not active" in {
+    "must set the `active` property to false, increment the version, set the actorId and return the old state of the record when the existing record is not active" in {
 
       val record = generateRecord.copy(metadata = generateRecord.metadata.copy(active = false))
-      val expectedRecord = record.copy(metadata = record.metadata.copy(version = 2))
+      val expectedRecord = record.copy(metadata = record.metadata.copy(version = 2), goodsItem = record.goodsItem.copy(actorId = "newActorId"))
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      val result = repository.deactivate(record.goodsItem.eori, record.recordId).futureValue.value
+      val request = RemoveGoodsItemRecordRequest(record.goodsItem.eori, record.recordId, "newActorId")
+      val result = repository.deactivate(request).futureValue.value
 
       result mustEqual record
 
@@ -638,7 +640,8 @@ class GoodsItemRecordRepositorySpec
 
     "must return none when there is no existing record" in {
 
-      val result = repository.deactivate("eori", UUID.randomUUID().toString).futureValue
+      val request = RemoveGoodsItemRecordRequest("eori", UUID.randomUUID().toString, "actorId")
+      val result = repository.deactivate(request).futureValue
       result mustBe None
     }
   }

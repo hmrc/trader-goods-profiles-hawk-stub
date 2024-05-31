@@ -1892,6 +1892,10 @@ class GoodsItemRecordsControllerSpec
     }
   }
 
+  "removeRecord" - {
+
+  }
+
   private def generateRecord = GoodsItemRecord(
     recordId = UUID.randomUUID().toString,
     goodsItem = GoodsItem(

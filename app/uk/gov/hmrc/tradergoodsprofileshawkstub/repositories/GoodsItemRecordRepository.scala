@@ -27,7 +27,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mongo.transaction.{TransactionConfiguration, Transactions}
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
@@ -175,16 +175,17 @@ class GoodsItemRecordRepository @Inject() (
       case _                                       => Future.successful(Done)
     }
 
-  def deactivate(eori: String, recordId: String): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
+  def deactivate(request: RemoveGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
 
     collection.findOneAndUpdate(
       Filters.and(
-        Filters.eq("recordId", recordId),
-        Filters.eq("goodsItem.eori", eori)
+        Filters.eq("recordId", request.recordId),
+        Filters.eq("goodsItem.eori", request.eori)
       ),
       Updates.combine(
         Updates.set("metadata.active", false),
-        Updates.inc("metadata.version", 1)
+        Updates.inc("metadata.version", 1),
+        Updates.set("goodsItem.actorId", request.actorId)
       )
     ).headOption()
   }
