@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
-import org.apache.pekko.Done
+import org.mongodb.scala.{MongoCommandException, MongoException, MongoWriteException}
 import org.mongodb.scala.model._
 import play.api.Configuration
 import play.api.libs.json.{Format, Json}
@@ -26,6 +26,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.DuplicateEoriAndTraderRefException
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.{Clock, Instant}
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NoStackTrace
 
 @Singleton
 class GoodsItemRecordRepository @Inject() (
@@ -90,6 +92,9 @@ class GoodsItemRecordRepository @Inject() (
     collection.insertOne(goodsItemRecord)
       .toFuture()
       .map(_ => goodsItemRecord)
+      .recoverWith { case e: MongoWriteException if isDuplicateKeyException(e) =>
+        Future.failed(DuplicateEoriAndTraderRefException)
+      }
   }
 
   def getById(eori: String, recordId: String): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
@@ -149,7 +154,9 @@ class GoodsItemRecordRepository @Inject() (
       ),
       Updates.combine(updates: _*),
       FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
-    ).headOption()
+    ).headOption().recoverWith { case e: MongoCommandException if isDuplicateKeyException(e) =>
+      Future.failed(DuplicateEoriAndTraderRefException)
+    }
   }
 
   def deactivate(eori: String, recordId: String): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
@@ -165,6 +172,9 @@ class GoodsItemRecordRepository @Inject() (
       )
     ).headOption()
   }
+
+  private def isDuplicateKeyException(e: MongoException): Boolean =
+    e.getCode == 11000
 }
 
 object GoodsItemRecordRepository {
@@ -196,6 +206,12 @@ object GoodsItemRecordRepository {
           .name("recordId_eori_idx")
       ),
       IndexModel(
+        Indexes.ascending("goodsItem.traderRef", "goodsItem.eori"),
+        IndexOptions()
+          .name("traderRef_eori_idx")
+          .unique(true)
+      ),
+      IndexModel(
         Indexes.ascending("metadata.updatedDateTime"),
         IndexOptions()
           .name("updatedDateTime_ttl_idx")
@@ -203,4 +219,6 @@ object GoodsItemRecordRepository {
       )
     )
   }
+
+  final case object DuplicateEoriAndTraderRefException extends Throwable with NoStackTrace
 }

@@ -37,6 +37,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.DuplicateEoriAndTraderRefException
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.format.DateTimeFormatter
@@ -129,8 +130,41 @@ class GoodsItemRecordsControllerSpec
       verify(mockRepository).insert(requestBody)
     }
 
-    "must not create a record and return an error when the given eori/traderRef is not unique within the database" ignore {
-      // TODO
+    "must not create a record and return an error when the given eori/traderRef is not unique within the database" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.insert(any)).thenReturn(Future.failed(GoodsItemRecordRepository.DuplicateEoriAndTraderRefException))
+
+      val result = route(app, request).value
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 010, message: Invalid Request Parameter"
+        )
+      )
+
+      status(result) mustEqual BAD_REQUEST
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository).insert(requestBody)
     }
 
     "must not create a record and return an error when there is no correlation-id header" in {
@@ -1411,11 +1445,48 @@ class GoodsItemRecordsControllerSpec
       verify(mockRepository).update(requestBody)
     }
 
-    "must not update a record and return an error when the updated traderRef is not unique within the database" ignore {
-      // TODO
+    "must not update a record and return an error when the updated traderRef is not unique within the database" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.update(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 010, message: Invalid Request Parameter"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository).update(requestBody)
     }
 
     "must not update a record and return an error when the record is inactive" ignore {
+      // TODO
+    }
+
+    "must not update a record and return an error when the record is locked" ignore {
       // TODO
     }
 

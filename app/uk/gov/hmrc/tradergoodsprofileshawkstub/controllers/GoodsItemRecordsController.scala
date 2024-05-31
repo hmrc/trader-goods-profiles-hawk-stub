@@ -28,6 +28,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.DuplicateEoriAndTraderRefException
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
 import java.time.format.DateTimeFormatter
@@ -69,6 +70,21 @@ class GoodsItemRecordsController @Inject()(
       goodsItemRecordRepository.insert(body).map { goodsItemRecord =>
 
         Created(goodsItemRecord.toCreateRecordResponse)
+          .withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+      }.recover { case DuplicateEoriAndTraderRefException =>
+
+        BadRequest(Json.toJson(ErrorResponse(
+          correlationId = validatedHeaders.correlationId,
+          timestamp = clock.instant(),
+          errorCode = "400",
+          errorMessage = "Bad Request",
+          source = "BACKEND",
+          detail = Seq("error: 010, message: Invalid Request Parameter") // What should this error code be?
+        )))
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
             "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
@@ -148,6 +164,19 @@ class GoodsItemRecordsController @Inject()(
             detail = Seq("error: XXX, message: Record does not exist") // What should this error code be?
           )))
         }.withHeaders(
+          "X-Correlation-ID" -> validatedHeaders.correlationId,
+          "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+          "Content-Type" -> "application/json"
+        )
+      }.recover { case DuplicateEoriAndTraderRefException =>
+        BadRequest(Json.toJson(ErrorResponse(
+          correlationId = validatedHeaders.correlationId,
+          timestamp = clock.instant(),
+          errorCode = "400",
+          errorMessage = "Bad Request",
+          source = "BACKEND",
+          detail = Seq("error: 010, message: Invalid Request Parameter") // What should this error code be?
+        ))).withHeaders(
           "X-Correlation-ID" -> validatedHeaders.correlationId,
           "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
           "Content-Type" -> "application/json"
