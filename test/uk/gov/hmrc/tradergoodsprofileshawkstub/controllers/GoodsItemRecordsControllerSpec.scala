@@ -34,7 +34,7 @@ import play.api.mvc.Call
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
@@ -1894,6 +1894,376 @@ class GoodsItemRecordsControllerSpec
 
   "removeRecord" - {
 
+    val correlationId = UUID.randomUUID().toString
+    val forwardedHost = "forwarded-for"
+    val record = generateRecord
+
+    val requestBody = RemoveGoodsItemRecordRequest(
+      eori = "eori1234567890",
+      recordId = UUID.randomUUID().toString,
+      actorId = "actorId123456789"
+    )
+
+    "must deactivate the given record and return OK when the record exists" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.deactivate(any)).thenReturn(Future.successful(Some(record)))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository).deactivate(requestBody)
+    }
+
+    "must return an error when the record does not exist" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.deactivate(any)).thenReturn(Future.successful(None))
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 026, message: Invalid Request Parameter"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository).deactivate(any)
+    }
+
+    "must return an error when there is no profile matching the eori" ignore {
+      // TODO
+    }
+
+    "must not deactivate the given record and return an error when there is no correlation-id header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 001, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).deactivate(any)
+    }
+
+    "must not deactivate the given record and return an error when there is no forward-host header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 005, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result) mustBe empty
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).deactivate(any)
+    }
+
+    "must not deactivate the given record and return an error when there is no date header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 002, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).deactivate(any)
+    }
+
+    "must not deactivate the given record and return an error when there is an invalid date header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "text/xml",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual FORBIDDEN
+
+      verify(mockRepository, never).deactivate(any)
+    }
+
+    "must not update a record and return an error when there is no content-type header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 003, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).deactivate(any)
+    }
+
+    "must not update a record and return an error when there is an invalid content-type header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "text/xml",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 003, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).deactivate(any)
+    }
+
+    "must not update a record and return an error when the request body can't be parsed as json" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord()).withBody("{")
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Invalid message : Bad Request",
+        source = "Json Validation",
+        detail = Seq.empty
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).deactivate(any)
+    }
+
+    "must not create a record and return an error when there are json schema violations" in {
+
+      val invalidRequestBody = requestBody.copy(
+        eori = "eori12345678901234567890",
+        actorId = "actorId12345678901234567890"
+      )
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord()).withBody(Json.toJson(invalidRequestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Invalid message : Bad Request",
+        source = "Json Validation",
+        detail = Seq(
+          "$.actorId: expected maxLength: 17, actual: 27",
+          "$.eori: expected maxLength: 17, actual: 24"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockRepository, never).deactivate(any)
+    }
+
+    "must return forbidden with no body when there is no authorization header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "text/xml",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-other-token"
+        )
+
+      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual FORBIDDEN
+
+      verify(mockRepository, never).deactivate(any)
+    }
   }
 
   private def generateRecord = GoodsItemRecord(

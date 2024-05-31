@@ -25,7 +25,7 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.{ValidatedHeaders, ValidatedParams}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
@@ -55,6 +55,7 @@ class GoodsItemRecordsController @Inject()(
   // Using `get` here as we want to throw an exception on startup if this can't be found
   private val createRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-create-record-request-v0.7.json").get
   private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.2.json").get
+  private val removeRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-remove-record-request-v0.2.json").get
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
   private val iso8601Formatter = DateTimeFormatter.ISO_DATE_TIME
@@ -214,8 +215,37 @@ class GoodsItemRecordsController @Inject()(
     result.leftMap(Future.successful).merge
   }
 
-  def removeRecord(): Action[AnyContent] =
-    Action(NotImplemented)
+  def removeRecord(): Action[RawBuffer] = Action.async(parse.raw) { implicit request =>
+
+    val result = for {
+      _                <- validateAuthorization(request)
+      validatedHeaders <- validatePostHeaders(request)
+      body             <- validateRequestBody[RemoveGoodsItemRecordRequest](request, removeRecordSchema)
+    } yield {
+
+      goodsItemRecordRepository.deactivate(body).map {
+
+        _.map { _ =>
+          Ok
+        }.getOrElse {
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 026, message: Invalid Request Parameter")
+          )))
+        }.withHeaders(
+          "X-Correlation-ID" -> validatedHeaders.correlationId,
+          "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+          "Content-Type" -> "application/json"
+        )
+      }
+    }
+
+    result.leftMap(Future.successful).merge
+  }
 
   private def validateAuthorization(request: Request[_]): Either[Result, _] =
     request.headers.get("Authorization")
