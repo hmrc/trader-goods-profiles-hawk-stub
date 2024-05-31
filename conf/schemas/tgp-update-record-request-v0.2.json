@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "TGPH02 Update TGP Record Request",
+  "javaType": "UpdateRecordRequest",
+  "description": "Update TGP Record Request v0.2",
+  "type": "object",
+  "properties": {
+    "eori": {
+      "description": "Identity of the trader as known to HMRC.",
+      "type": "string",
+      "minLength": 14,
+      "maxLength": 17
+    },
+    "actorId": {
+      "description": "EORI number of the user making the change, which may be different to the trader.",
+      "type": "string",
+      "minLength": 14,
+      "maxLength": 17
+    },
+    "recordId": {
+      "description": "ID of the record for the TGP Product in the TGP Core database (UUID).",
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "traderRef": {
+      "description": "Unique product reference used by the trader to identify the goods. For example a Stock Keeping Unit (SKU) code.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "comcode": {
+      "description": "A code specific to goods that is internationally recognised.",
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 10
+    },
+    "goodsDescription": {
+      "description": "Description of the goods using terminology that is familiar to the trader. For example, Bananas or T-Shirts",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "countryOfOrigin": {
+      "description": "Country where the product came from. This is a char field with 2 letters in it as per ISO 3166 standards.",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 2
+    },
+    "category": {
+      "description": "To be retrieved using the Online Trade Tariff API. The category of the goods based on applicable restrictions, prohibitions or any exemptions the trader may hold. This is an integer field with value 1, 2, or 3.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "assessments": {
+      "description": "Array of category assessment data describing the measures which apply to the trader's movement of goods, and how the trader is exempt (if applicable).",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/assessment"
+      }
+    },
+    "supplementaryUnit": {
+      "description": "Supplementary units are used to provide quantity of goods.For eg. 13",
+      "type": "number"
+    },
+    "measurementUnit": {
+      "description": "Measurement units are used when an additional measurement unit is needed on customs declarations. For example: the quantity of the products as well as the weight in kilograms. ",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "comcodeEffectiveFromDate": {
+      "description": "Date in the (OTT) when authorised usage of a commodity code came into effect.",
+      "$ref": "#/definitions/dateTime"
+    },
+    "comcodeEffectiveToDate": {
+      "description": "Date in the (OTT) when authorised usage of a commodity code expired or will expire. ",
+      "$ref": "#/definitions/dateTime"
+    }
+  },
+  "required": [
+    "eori",
+    "actorId",
+    "recordId"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "assessment": {
+      "type": "object",
+      "properties": {
+        "assessmentId": {
+          "description": "The ID of the category assessment(s) retrieved from the OTT categorisation API",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 35
+        },
+        "primaryCategory": {
+          "description": "The primary category of the assessment",
+          "type": "integer"
+        },
+        "condition": {
+          "description": "A collection of data detailing the condition the trader meets to exempt the category assessment",
+          "$ref": "#/definitions/condition"
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of condition/exemption as provided by the OTT categorisation API",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 35
+        },
+        "conditionId": {
+          "description": "The ID/code of the condition as provided by the OTT categorisation API",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10
+        },
+        "conditionDescription": {
+          "description": "The description of the condition as provided by OTT categorisation API",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "conditionTraderText": {
+          "description": "A free text statement provided by the trader if required in the CDS guidance",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "dateTime": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "format": "date-time"
+    }
+  }
+}
