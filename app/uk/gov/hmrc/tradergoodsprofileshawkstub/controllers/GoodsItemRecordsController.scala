@@ -19,19 +19,20 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 import cats.data.EitherNec
 import cats.syntax.all._
 import org.everit.json.schema.Schema
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json, Reads}
 import play.api.mvc._
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
-import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.ValidatedHeaders
+import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.{ValidatedHeaders, ValidatedParams}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
-import java.time.Clock
 import java.time.format.DateTimeFormatter
+import java.time.{Clock, Instant}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -48,22 +49,43 @@ class GoodsItemRecordsController @Inject()(
                                           )(implicit ec: ExecutionContext) extends BackendBaseController {
 
   private val expectedAuthHeader: String = configuration.get[String]("expected-auth-header")
-  private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
+  private val defaultSize: Int = configuration.get[Int]("goods-item-records.default-size")
+  private val maxSize: Int = configuration.get[Int]("goods-item-records.max-size")
 
   // Using `get` here as we want to throw an exception on startup if this can't be found
   private val createRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-create-record-request-v0.7.json").get
+  private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.2.json").get
+  private val removeRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-remove-record-request-v0.2.json").get
 
-  def createRecord(): Action[AnyContent] = Action.async { implicit request =>
+  private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
+  private val iso8601Formatter = DateTimeFormatter.ISO_DATE_TIME
+
+  def createRecord(): Action[RawBuffer] = Action.async(parse.raw) { implicit request =>
 
     val result = for {
       _                <- validateAuthorization(request)
       validatedHeaders <- validatePostHeaders(request)
-      body             <- validateCreateGoodsRecordItemRequest(request)
+      body             <- validateRequestBody[CreateGoodsItemRecordRequest](request, createRecordSchema)
     } yield {
 
       goodsItemRecordRepository.insert(body).map { goodsItemRecord =>
 
         Created(goodsItemRecord.toCreateRecordResponse)
+          .withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+      }.recover { case DuplicateEoriAndTraderRefException =>
+
+        BadRequest(Json.toJson(ErrorResponse(
+          correlationId = validatedHeaders.correlationId,
+          timestamp = clock.instant(),
+          errorCode = "400",
+          errorMessage = "Bad Request",
+          source = "BACKEND",
+          detail = Seq("error: 010, message: Invalid Request Parameter")
+        )))
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
             "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
@@ -75,8 +97,30 @@ class GoodsItemRecordsController @Inject()(
     result.leftMap(Future.successful).merge
   }
 
-  def getRecords(eori: String): Action[AnyContent] =
-    Action(NotImplemented)
+  def getRecords(eori: String): Action[AnyContent] = Action.async { implicit request =>
+
+    val result = for {
+      _                <- validateAuthorization(request)
+      validatedHeaders <- validateGetHeaders(request)
+      validatedParams  <- validateGetParameters(request)
+    } yield {
+
+      val page = validatedParams.page.getOrElse(0)
+      val size = validatedParams.size.getOrElse(defaultSize)
+
+      goodsItemRecordRepository.get(eori, validatedParams.lastUpdatedDate, page, size).map { result =>
+        val pagination = Pagination(totalRecords = result.totalCount.toInt, page, size)
+        Ok(Json.toJson(GetGoodsItemsResponse(result.records, pagination)))
+          .withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+      }
+    }
+
+    result.leftMap(Future.successful).merge
+  }
 
   def getRecord(eori: String, recordId: String): Action[AnyContent] = Action.async { implicit request =>
 
@@ -99,11 +143,109 @@ class GoodsItemRecordsController @Inject()(
     result.leftMap(Future.successful).merge
   }
 
-  def updateRecord(): Action[AnyContent] =
-    Action(NotImplemented)
+  def updateRecord(): Action[RawBuffer] = Action.async(parse.raw) { implicit request =>
 
-  def removeRecord(): Action[AnyContent] =
-    Action(NotImplemented)
+    val result = for {
+      _                <- validateAuthorization(request)
+      validatedHeaders <- validatePostHeaders(request)
+      body             <- validateRequestBody[UpdateGoodsItemRecordRequest](request, updateRecordSchema)
+    } yield {
+
+      goodsItemRecordRepository.update(body).map {
+
+        _.map { goodsItemRecord =>
+          Ok(goodsItemRecord.toCreateRecordResponse)
+        }.getOrElse {
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 026, message: Invalid Request Parameter")
+          )))
+        }.withHeaders(
+          "X-Correlation-ID" -> validatedHeaders.correlationId,
+          "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+          "Content-Type" -> "application/json"
+        )
+      }.recover {
+        case DuplicateEoriAndTraderRefException =>
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 010, message: Invalid Request Parameter")
+          ))).withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+        case RecordLockedException =>
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 027, message: Invalid Request")
+          ))).withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+        case RecordInactiveException =>
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 031, message: Invalid Request")
+          ))).withHeaders(
+            "X-Correlation-ID" -> validatedHeaders.correlationId,
+            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+            "Content-Type" -> "application/json"
+          )
+      }
+    }
+
+    result.leftMap(Future.successful).merge
+  }
+
+  def removeRecord(): Action[RawBuffer] = Action.async(parse.raw) { implicit request =>
+
+    val result = for {
+      _                <- validateAuthorization(request)
+      validatedHeaders <- validatePostHeaders(request)
+      body             <- validateRequestBody[RemoveGoodsItemRecordRequest](request, removeRecordSchema)
+    } yield {
+
+      goodsItemRecordRepository.deactivate(body).map {
+
+        _.map { _ =>
+          Ok
+        }.getOrElse {
+          BadRequest(Json.toJson(ErrorResponse(
+            correlationId = validatedHeaders.correlationId,
+            timestamp = clock.instant(),
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 026, message: Invalid Request Parameter")
+          )))
+        }.withHeaders(
+          "X-Correlation-ID" -> validatedHeaders.correlationId,
+          "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+          "Content-Type" -> "application/json"
+        )
+      }
+    }
+
+    result.leftMap(Future.successful).merge
+  }
 
   private def validateAuthorization(request: Request[_]): Either[Result, _] =
     request.headers.get("Authorization")
@@ -185,14 +327,33 @@ class GoodsItemRecordsController @Inject()(
     }
   }
 
-  private def validateCreateGoodsRecordItemRequest(request: Request[AnyContent]): Either[Result, CreateGoodsItemRecordRequest] = {
+  private def validatePage(request: Request[_]): EitherNec[String, Option[Int]] =
+    request.getQueryString("page").traverse { string =>
+      string.toIntOption
+        .filter(_ >= 0)
+        .toRightNec("error: 029, message: Invalid Request Parameter")
+    }
 
-    val json = request.body.asJson.get
-    val validationErrors = schemaValidationService.validate(createRecordSchema, json)
+  private def validateSize(request: Request[_]): EitherNec[String, Option[Int]] =
+    request.getQueryString("size").traverse { string =>
+      string.toIntOption
+        .filter(s => s >= 0 && s < maxSize)
+        .toRightNec("error: 030, message: Invalid Request Parameter")
+    }
 
-    if (validationErrors.isEmpty) {
-      Right(json.as[CreateGoodsItemRecordRequest])
-    } else Left {
+  private def validateLastUpdatedDate(request: Request[_]): EitherNec[String, Option[Instant]] =
+    request.getQueryString("lastUpdatedDate").traverse { string =>
+      Try(Instant.from(iso8601Formatter.parse(string)))
+        .toOption
+        .toRightNec("error: 028, message: Invalid Request Parameter")
+    }
+
+  private def validateGetParameters(request: Request[_]): Either[Result, ValidatedParams] = {
+    (
+      validatePage(request),
+      validateSize(request),
+      validateLastUpdatedDate(request)
+    ).parMapN(ValidatedParams).leftMap { errors =>
 
       val correlationId = request.headers.get("X-Correlation-Id").getOrElse(uuidService.generate())
       val forwardedHost = request.headers.get("X-Forwarded-Host")
@@ -207,12 +368,67 @@ class GoodsItemRecordsController @Inject()(
         correlationId = correlationId,
         timestamp = clock.instant(),
         errorCode = "400",
-        errorMessage = "Invalid message : Bad Request",
-        source = "Json Validation",
-        detail = validationErrors.map { error =>
-          s"${error.key}: ${error.message}"
-        }
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = errors.toList
       ))).withHeaders(headers: _*)
+    }
+  }
+
+  private def validateJsonBody(request: Request[RawBuffer]): Either[Result, JsValue] = {
+    request.body.asBytes().toRight(EntityTooLarge).flatMap { byteString =>
+      Try(Json.parse(byteString.utf8String)).toOption.toRight {
+
+        val correlationId = request.headers.get("X-Correlation-Id").getOrElse(uuidService.generate())
+        val forwardedHost = request.headers.get("X-Forwarded-Host")
+
+        val headers = Seq(
+          Some("X-Correlation-Id" -> correlationId),
+          forwardedHost.map("X-Forwarded-Host" -> _),
+          Some("Content-Type" -> "application/json")
+        ).flatten
+
+        BadRequest(Json.toJson(ErrorResponse(
+          correlationId = correlationId,
+          timestamp = clock.instant(),
+          errorCode = "400",
+          errorMessage = "Invalid message : Bad Request",
+          source = "Json Validation",
+          detail = Seq.empty
+        ))).withHeaders(headers: _*)
+      }
+    }
+  }
+
+  private def validateRequestBody[A: Reads](request: Request[RawBuffer], schema: Schema): Either[Result, A] = {
+    validateJsonBody(request).flatMap { json =>
+
+      val validationErrors = schemaValidationService.validate(schema, json)
+
+      if (validationErrors.isEmpty) {
+        Right(json.as[A])
+      } else Left {
+
+        val correlationId = request.headers.get("X-Correlation-Id").getOrElse(uuidService.generate())
+        val forwardedHost = request.headers.get("X-Forwarded-Host")
+
+        val headers = Seq(
+          Some("X-Correlation-Id" -> correlationId),
+          forwardedHost.map("X-Forwarded-Host" -> _),
+          Some("Content-Type" -> "application/json")
+        ).flatten
+
+        BadRequest(Json.toJson(ErrorResponse(
+          correlationId = correlationId,
+          timestamp = clock.instant(),
+          errorCode = "400",
+          errorMessage = "Invalid message : Bad Request",
+          source = "Json Validation",
+          detail = validationErrors.map { error =>
+            s"${error.key}: ${error.message}"
+          }
+        ))).withHeaders(headers: _*)
+      }
     }
   }
 }
@@ -220,4 +436,6 @@ class GoodsItemRecordsController @Inject()(
 object GoodsItemRecordsController {
 
   final case class ValidatedHeaders(correlationId: String, forwardedHost: String)
+
+  final case class ValidatedParams(page: Option[Int], size: Option[Int], lastUpdatedDate: Option[Instant])
 }

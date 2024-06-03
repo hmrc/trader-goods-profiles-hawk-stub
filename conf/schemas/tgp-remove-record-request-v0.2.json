@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "TGPH04 Remove TGP Record Request",
+  "javaType": "RemoveRecordRequest",
+  "description": "Remove TGP Record Request v0.1",
+  "type": "object",
+  "properties": {
+    "eori": {
+      "description": "Identity of the trader as known to HMRC.",
+      "type": "string",
+      "minLength": 14,
+      "maxLength": 17
+    },
+    "actorId": {
+      "description": "EORI number of the user making the change, which may be different to the trader.",
+      "type": "string",
+      "minLength": 14,
+      "maxLength": 17
+    },
+    "recordId": {
+      "description": "ID of the record for the TGP Product in the TGP Core database (UUID).",
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36
+    }
+  },
+  "required": [
+    "eori",
+    "actorId",
+    "recordId"
+  ],
+  "additionalProperties": false
+}

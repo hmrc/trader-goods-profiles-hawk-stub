@@ -34,7 +34,8 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.play.bootstrap.dispatchers.MDCPropagatingExecutorService
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.temporal.ChronoUnit
@@ -113,6 +114,9 @@ class GoodsItemRecordRepositorySpec
 
       val expectedGoodsItemRecord = generateRecord.copy(
         recordId = "recordId",
+        goodsItem = generateRecord.goodsItem.copy(
+          traderRef = "traderRef"
+        ),
         metadata = generateRecord.metadata.copy(
           updatedDateTime = clock.instant(),
           createdDateTime = clock.instant()
@@ -121,6 +125,21 @@ class GoodsItemRecordRepositorySpec
 
       val result = repository.insert(request).futureValue
       result mustEqual expectedGoodsItemRecord
+
+      val results = repository.collection.find(Filters.eq("recordId", "recordId")).toFuture().futureValue
+      results.length mustBe 1
+      results.head mustBe result
+    }
+
+    "must fail if a record already exists with that eori/traderRef" in {
+
+      when(mockUuidService.generate())
+        .thenReturn("recordId", "recordId2")
+
+      val result = repository.insert(request).futureValue
+      val error = repository.insert(request).failed.futureValue
+
+      error mustBe DuplicateEoriAndTraderRefException
 
       val results = repository.collection.find(Filters.eq("recordId", "recordId")).toFuture().futureValue
       results.length mustBe 1
@@ -334,7 +353,7 @@ class GoodsItemRecordRepositorySpec
           goodsItem = GoodsItem(
             eori = "eori",
             actorId = "anotherActorId",
-            traderRef = "traderRef",
+            traderRef = record.goodsItem.traderRef,
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
@@ -379,6 +398,130 @@ class GoodsItemRecordRepositorySpec
 
         result mustEqual expectedResult
         repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual expectedResult
+      }
+
+      "must fail when the new traderRef already exists in the database" in {
+
+        val record = generateRecord
+
+        val request = UpdateGoodsItemRecordRequest(
+          recordId = record.recordId,
+          eori = record.goodsItem.eori,
+          actorId = "anotherActorId",
+          traderRef = Some("traderRef2"),
+          comcode = Some("anotherComcode"),
+          goodsDescription = Some("anotherGoodsDescription"),
+          countryOfOrigin = Some("anotherCountryOfOrigin"),
+          category = Some(2),
+          assessments = Some(Seq(
+            Assessment(
+              assessmentId = Some("anotherAssessmentId"),
+              primaryCategory = Some(3),
+              condition = Some(
+                Condition(
+                  `type` = Some("anotherType"),
+                  conditionId = Some("anotherConditionId"),
+                  conditionDescription = Some("anotherConditionDescription"),
+                  conditionTraderText = Some("anotherConditionTraderText")
+                )
+              )
+            )
+          )),
+          supplementaryUnit = Some(BigDecimal(3.5)),
+          measurementUnit = Some("anotherMeasurementUnit"),
+          comcodeEffectiveFromDate = Some(record.goodsItem.comcodeEffectiveFromDate.plus(30, ChronoUnit.SECONDS)),
+          comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
+        )
+
+        repository.collection.insertOne(record).toFuture().futureValue
+        repository.collection.insertOne(record.copy(recordId = "recordId2", goodsItem = record.goodsItem.copy(traderRef = "traderRef2"))).toFuture().futureValue
+
+        val result = repository.update(request).failed.futureValue
+        result mustBe DuplicateEoriAndTraderRefException
+
+        repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+      }
+
+      "must fail when the record is locked" in {
+
+        val record = generateRecord.copy(metadata = generateRecord.metadata.copy(locked = true))
+
+        val request = UpdateGoodsItemRecordRequest(
+          recordId = record.recordId,
+          eori = record.goodsItem.eori,
+          actorId = "anotherActorId",
+          traderRef = Some("anotherTraderRef"),
+          comcode = Some("anotherComcode"),
+          goodsDescription = Some("anotherGoodsDescription"),
+          countryOfOrigin = Some("anotherCountryOfOrigin"),
+          category = Some(2),
+          assessments = Some(Seq(
+            Assessment(
+              assessmentId = Some("anotherAssessmentId"),
+              primaryCategory = Some(3),
+              condition = Some(
+                Condition(
+                  `type` = Some("anotherType"),
+                  conditionId = Some("anotherConditionId"),
+                  conditionDescription = Some("anotherConditionDescription"),
+                  conditionTraderText = Some("anotherConditionTraderText")
+                )
+              )
+            )
+          )),
+          supplementaryUnit = Some(BigDecimal(3.5)),
+          measurementUnit = Some("anotherMeasurementUnit"),
+          comcodeEffectiveFromDate = Some(record.goodsItem.comcodeEffectiveFromDate.plus(30, ChronoUnit.SECONDS)),
+          comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
+        )
+
+        repository.collection.insertOne(record).toFuture().futureValue
+
+        val result = repository.update(request).failed.futureValue
+        result mustBe RecordLockedException
+
+        repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+      }
+
+      "must fail when the record is inactive" in {
+
+        val record = generateRecord.copy(metadata = generateRecord.metadata.copy(active = false))
+
+        val request = UpdateGoodsItemRecordRequest(
+          recordId = record.recordId,
+          eori = record.goodsItem.eori,
+          actorId = "anotherActorId",
+          traderRef = Some("anotherTraderRef"),
+          comcode = Some("anotherComcode"),
+          goodsDescription = Some("anotherGoodsDescription"),
+          countryOfOrigin = Some("anotherCountryOfOrigin"),
+          category = Some(2),
+          assessments = Some(Seq(
+            Assessment(
+              assessmentId = Some("anotherAssessmentId"),
+              primaryCategory = Some(3),
+              condition = Some(
+                Condition(
+                  `type` = Some("anotherType"),
+                  conditionId = Some("anotherConditionId"),
+                  conditionDescription = Some("anotherConditionDescription"),
+                  conditionTraderText = Some("anotherConditionTraderText")
+                )
+              )
+            )
+          )),
+          supplementaryUnit = Some(BigDecimal(3.5)),
+          measurementUnit = Some("anotherMeasurementUnit"),
+          comcodeEffectiveFromDate = Some(record.goodsItem.comcodeEffectiveFromDate.plus(30, ChronoUnit.SECONDS)),
+          comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
+        )
+
+        repository.collection.insertOne(record).toFuture().futureValue
+
+        val result = repository.update(request).failed.futureValue
+        result mustBe RecordInactiveException
+
+        repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
       }
     }
 
@@ -463,14 +606,15 @@ class GoodsItemRecordRepositorySpec
 
   "deactivate" - {
 
-    "must set the `active` property to false, increment the version, and return the old state of the record when the existing record is active" in {
+    "must set the `active` property to false, increment the version, set the actorId, and return the old state of the record when the existing record is active" in {
 
       val record = generateRecord
-      val expectedRecord = record.copy(metadata = record.metadata.copy(active = false, version = 2))
+      val expectedRecord = record.copy(metadata = record.metadata.copy(active = false, version = 2), goodsItem = record.goodsItem.copy(actorId = "newActorId"))
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      val result = repository.deactivate(record.goodsItem.eori, record.recordId).futureValue.value
+      val request = RemoveGoodsItemRecordRequest(record.goodsItem.eori, record.recordId, "newActorId")
+      val result = repository.deactivate(request).futureValue.value
 
       result mustEqual record
 
@@ -478,14 +622,15 @@ class GoodsItemRecordRepositorySpec
       updatedRecord mustEqual expectedRecord
     }
 
-    "must set the `active` property to false, increment the version, and return the old state of the record when the existing record is not active" in {
+    "must set the `active` property to false, increment the version, set the actorId and return the old state of the record when the existing record is not active" in {
 
       val record = generateRecord.copy(metadata = generateRecord.metadata.copy(active = false))
-      val expectedRecord = record.copy(metadata = record.metadata.copy(version = 2))
+      val expectedRecord = record.copy(metadata = record.metadata.copy(version = 2), goodsItem = record.goodsItem.copy(actorId = "newActorId"))
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      val result = repository.deactivate(record.goodsItem.eori, record.recordId).futureValue.value
+      val request = RemoveGoodsItemRecordRequest(record.goodsItem.eori, record.recordId, "newActorId")
+      val result = repository.deactivate(request).futureValue.value
 
       result mustEqual record
 
@@ -495,7 +640,8 @@ class GoodsItemRecordRepositorySpec
 
     "must return none when there is no existing record" in {
 
-      val result = repository.deactivate("eori", UUID.randomUUID().toString).futureValue
+      val request = RemoveGoodsItemRecordRequest("eori", UUID.randomUUID().toString, "actorId")
+      val result = repository.deactivate(request).futureValue
       result mustBe None
     }
   }
@@ -505,7 +651,7 @@ class GoodsItemRecordRepositorySpec
     goodsItem = GoodsItem(
       eori = "eori",
       actorId = "actorId",
-      traderRef = "traderRef",
+      traderRef = UUID.randomUUID().toString,
       comcode = "comcode",
       goodsDescription = "goodsDescription",
       countryOfOrigin = "countryOfOrigin",
