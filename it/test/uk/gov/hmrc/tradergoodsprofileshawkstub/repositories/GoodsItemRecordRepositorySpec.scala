@@ -34,8 +34,8 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.play.bootstrap.dispatchers.MDCPropagatingExecutorService
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException, RecordNotFoundException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.temporal.ChronoUnit
@@ -601,6 +601,141 @@ class GoodsItemRecordRepositorySpec
 
       repository.update(request).futureValue mustBe None
       repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+    }
+  }
+
+  "patch" - {
+
+    "must set properties when they are provided" in {
+
+      val record = generateRecord
+
+      val request = PatchGoodsItemRequest(
+        eori = record.goodsItem.eori,
+        recordId = record.recordId,
+        accreditationStatus = None,
+        version = Some(123),
+        active = None,
+        locked = None,
+        toReview = None,
+        reviewReason = None,
+        declarable = None,
+        updatedDateTime = None
+      )
+
+      val expectedResult = record.copy(
+        metadata = GoodsItemMetadata(
+          accreditationStatus = record.metadata.accreditationStatus,
+          version = 123,
+          active = record.metadata.active,
+          locked = record.metadata.locked,
+          toReview = record.metadata.toReview,
+          reviewReason = record.metadata.reviewReason,
+          declarable = record.metadata.declarable,
+          ukimsNumber = record.metadata.ukimsNumber,
+          nirmsNumber = record.metadata.nirmsNumber,
+          niphlNumber = record.metadata.niphlNumber,
+          srcSystemName = record.metadata.srcSystemName,
+          createdDateTime = record.metadata.createdDateTime,
+          updatedDateTime = record.metadata.updatedDateTime
+        )
+      )
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      repository.patch(request).futureValue
+
+      repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual expectedResult
+    }
+
+    "must not set properties that are not provided" in {
+
+      val record = generateRecord
+
+      val request = PatchGoodsItemRequest(
+        eori = record.goodsItem.eori,
+        recordId = record.recordId,
+        accreditationStatus = None,
+        version = None,
+        active = None,
+        locked = None,
+        toReview = None,
+        reviewReason = None,
+        declarable = None,
+        updatedDateTime = None
+      )
+
+      val expectedResult = record.copy(
+        metadata = GoodsItemMetadata(
+          accreditationStatus = record.metadata.accreditationStatus,
+          version = record.metadata.version,
+          active = record.metadata.active,
+          locked = record.metadata.locked,
+          toReview = record.metadata.toReview,
+          reviewReason = record.metadata.reviewReason,
+          declarable = record.metadata.declarable,
+          ukimsNumber = record.metadata.ukimsNumber,
+          nirmsNumber = record.metadata.nirmsNumber,
+          niphlNumber = record.metadata.niphlNumber,
+          srcSystemName = record.metadata.srcSystemName,
+          createdDateTime = record.metadata.createdDateTime,
+          updatedDateTime = record.metadata.updatedDateTime
+        )
+      )
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      repository.patch(request).futureValue
+
+      repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual expectedResult
+    }
+
+    "must succeed when given no fields to change" in {
+
+      val record = generateRecord
+
+      val request = PatchGoodsItemRequest(
+        eori = record.goodsItem.eori,
+        recordId = record.recordId,
+        accreditationStatus = None,
+        version = None,
+        active = None,
+        locked = None,
+        toReview = None,
+        reviewReason = None,
+        declarable = None,
+        updatedDateTime = None
+      )
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      repository.patch(request).futureValue
+
+      repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+    }
+
+    "must fail when asked to update a record that does not exist" in {
+
+      val record = generateRecord
+
+      val request = PatchGoodsItemRequest(
+        eori = record.goodsItem.eori,
+        recordId = "some other record id",
+        accreditationStatus = None,
+        version = Some(123),
+        active = None,
+        locked = None,
+        toReview = None,
+        reviewReason = None,
+        declarable = None,
+        updatedDateTime = None
+      )
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      val result = repository.patch(request).failed.futureValue
+
+      result mustBe RecordNotFoundException
     }
   }
 
