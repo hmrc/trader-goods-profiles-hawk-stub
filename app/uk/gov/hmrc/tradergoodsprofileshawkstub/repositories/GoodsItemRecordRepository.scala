@@ -17,8 +17,8 @@
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
 import org.apache.pekko.Done
-import org.mongodb.scala.{ClientSession, MongoCommandException, MongoException, MongoWriteException}
 import org.mongodb.scala.model._
+import org.mongodb.scala.{ClientSession, MongoCommandException, MongoException, MongoWriteException}
 import play.api.Configuration
 import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.mongo.MongoComponent
@@ -27,7 +27,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mongo.transaction.{TransactionConfiguration, Transactions}
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
@@ -165,6 +165,33 @@ class GoodsItemRecordRepository @Inject() (
           Future.failed(DuplicateEoriAndTraderRefException)
         }
       }
+    }
+  }
+
+  def patch(request: PatchGoodsItemRequest): Future[Option[Done]] = Mdc.preservingMdc {
+
+    val updates = Seq(
+      request.accreditationStatus.map(x => Updates.set("metadata.accreditationStatus", x.toString)),
+      request.version.map(Updates.set("metadata.version", _)),
+      request.active.map(Updates.set("metadata.active", _)),
+      request.locked.map(Updates.set("metadata.locked", _)),
+      request.toReview.map(Updates.set("metadata.toReview", _)),
+      request.reviewReason.map(Updates.set("metadata.reviewReason", _)),
+      request.declarable.map(Updates.set("metadata.declarable", _)),
+      request.updatedDateTime.map(Updates.set("metadata.updatedDateTime", _))
+    ).flatten
+
+    if (updates.nonEmpty) {
+      collection.findOneAndUpdate(
+        Filters.and(
+          Filters.eq("recordId", request.recordId),
+          Filters.eq("goodsItem.eori", request.eori)
+        ),
+        Updates.combine(updates: _*),
+        FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+      ).toFutureOption().map(_.map(_ => Done))
+    } else {
+      Future.successful(Some(Done))
     }
   }
 

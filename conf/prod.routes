@@ -8,4 +8,6 @@ PUT        /tgp/removerecord/v1                   uk.gov.hmrc.tradergoodsprofile
 
 PUT        /tgp/maintainprofile/v1                uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.ProfilesController.maintainProfile()
 
+PATCH      /test-support/goods-item              uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemTestSupportController.patch()
+
 ->         /                                      health.Routes
