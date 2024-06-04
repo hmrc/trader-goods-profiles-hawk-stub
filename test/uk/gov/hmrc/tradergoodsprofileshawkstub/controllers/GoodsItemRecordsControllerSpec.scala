@@ -36,7 +36,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
@@ -57,7 +57,8 @@ class GoodsItemRecordsControllerSpec
     with OptionValues {
 
   private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
-  private val mockRepository = mock[GoodsItemRecordRepository]
+  private val mockGoodsItemRepository = mock[GoodsItemRecordRepository]
+  private val mockTraderProfilesRepository = mock[TraderProfileRepository]
   private val mockUuidService = mock[UuidService]
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
@@ -72,14 +73,15 @@ class GoodsItemRecordsControllerSpec
       )
       .overrides(
         bind[Clock].toInstance(clock),
-        bind[GoodsItemRecordRepository].toInstance(mockRepository),
+        bind[GoodsItemRecordRepository].toInstance(mockGoodsItemRepository),
+        bind[TraderProfileRepository].toInstance(mockTraderProfilesRepository),
         bind[UuidService].toInstance(mockUuidService)
       )
       .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockRepository, mockUuidService)
+    Mockito.reset(mockGoodsItemRepository, mockUuidService, mockTraderProfilesRepository)
   }
 
 
@@ -116,7 +118,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.insert(any)).thenReturn(Future.successful(record))
 
       val result = route(app, request).value
 
@@ -127,7 +130,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).insert(requestBody)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).insert(requestBody)
     }
 
     "must not create a record and return an error when the given eori/traderRef is not unique within the database" in {
@@ -142,7 +146,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.failed(GoodsItemRecordRepository.DuplicateEoriAndTraderRefException))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.insert(any)).thenReturn(Future.failed(GoodsItemRecordRepository.DuplicateEoriAndTraderRefException))
 
       val result = route(app, request).value
 
@@ -164,7 +169,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).insert(requestBody)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).insert(requestBody)
     }
 
     "must not create a record and return an error when there is no correlation-id header" in {
@@ -178,7 +184,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -200,7 +205,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return an error when there is no forwarded-host header" in {
@@ -214,7 +220,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -236,7 +241,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result) mustBe empty
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return an error when there is no date header" in {
@@ -250,7 +256,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -272,7 +277,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return an error when there is an invalid date header" in {
@@ -287,7 +293,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -309,7 +314,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return an error when there is no content-type header" in {
@@ -323,7 +329,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -345,7 +350,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return an error when there is an invalid content-type header" in {
@@ -360,7 +366,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -382,7 +387,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return an error when the request body can't be parsed as json" in {
@@ -397,7 +403,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -417,7 +422,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return an error when there are json schema violations" in {
@@ -437,7 +443,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -460,11 +465,46 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
-    "must not create a record and return an error when there is no profile matching the eori" ignore {
-      // TODO
+    "must not create a record and return an error when there is no profile matching the eori" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(false))
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 007, message: Invalid Request Parameter"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return forbidden with no body when there is no authorization header" in {
@@ -478,14 +518,14 @@ class GoodsItemRecordsControllerSpec
           "Date" -> formattedDate,
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
 
     "must not create a record and return forbidden with no body when there is an invalid authorization header" in {
@@ -500,14 +540,14 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-other-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).insert(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).insert(any)
     }
   }
 
@@ -528,7 +568,7 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(Some(record)))
+      when(mockGoodsItemRepository.getById(any, any)).thenReturn(Future.successful(Some(record)))
 
       val result = route(app, request).value
 
@@ -544,7 +584,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).getById(record.goodsItem.eori, record.recordId)
+      verify(mockGoodsItemRepository).getById(record.goodsItem.eori, record.recordId)
     }
 
     "must return an empty response when a result is not returned" in {
@@ -558,7 +598,7 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+      when(mockGoodsItemRepository.getById(any, any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
 
@@ -574,7 +614,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).getById(record.goodsItem.eori, record.recordId)
+      verify(mockGoodsItemRepository).getById(record.goodsItem.eori, record.recordId)
     }
 
     "must return an error when there is no correlation-id header" in {
@@ -587,7 +627,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -610,7 +649,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).getById(any, any)
+      verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
     "must return an error when there is no forwarded-host header" in {
@@ -623,7 +662,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -646,7 +684,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result) mustBe empty
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).getById(any, any)
+      verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
     "must return an error when there is no date header" in {
@@ -659,7 +697,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -682,7 +719,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).getById(any, any)
+      verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
     "must return an error when there is an invalid date header" in {
@@ -696,7 +733,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -719,7 +755,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).getById(any, any)
+      verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
     "must return forbidden with no body when there is no authorization header" in {
@@ -732,13 +768,13 @@ class GoodsItemRecordsControllerSpec
           "Date" -> formattedDate
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+      when(mockGoodsItemRepository.getById(any, any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).getById(any, any)
+      verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
     "must return forbidden with no body when there is an invalid authorization header" in {
@@ -752,13 +788,13 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-other-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
+      when(mockGoodsItemRepository.getById(any, any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).getById(any, any)
+      verify(mockGoodsItemRepository, never).getById(any, any)
     }
   }
 
@@ -798,7 +834,7 @@ class GoodsItemRecordsControllerSpec
         totalCount = 7, records = Seq(record)
       )
 
-      when(mockRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
+      when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
 
@@ -814,7 +850,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 3)
+      verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 3)
     }
 
     "must return an empty response when a result is not returned" in {
@@ -832,7 +868,7 @@ class GoodsItemRecordsControllerSpec
         totalCount = 0, records = Seq.empty
       )
 
-      when(mockRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
+      when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
 
@@ -848,7 +884,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 3)
+      verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 3)
     }
 
     "must default page to 0" in {
@@ -866,7 +902,7 @@ class GoodsItemRecordsControllerSpec
         totalCount = 0, records = Seq.empty
       )
 
-      when(mockRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
+      when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
 
@@ -882,7 +918,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 0, size = 3)
+      verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 0, size = 3)
     }
 
     "must default size to the size provided in configuration" in {
@@ -899,7 +935,7 @@ class GoodsItemRecordsControllerSpec
         totalCount = 0, records = Seq.empty
       )
 
-      when(mockRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
+      when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
 
@@ -915,7 +951,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 1337)
+      verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 1337)
     }
 
     "must default lastUpdatedDate to None" in {
@@ -933,7 +969,7 @@ class GoodsItemRecordsControllerSpec
         totalCount = 7, records = Seq(record)
       )
 
-      when(mockRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
+      when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
 
@@ -949,7 +985,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).get(record.goodsItem.eori, lastUpdated = None, page = 2, size = 3)
+      verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = None, page = 2, size = 3)
     }
 
     "must return an error when page is invalid" in {
@@ -963,7 +999,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -986,7 +1021,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when page is less than 0" in {
@@ -1000,7 +1035,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1023,7 +1057,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when size is invalid" in {
@@ -1037,7 +1071,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1060,7 +1093,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when size is less than 0" in {
@@ -1074,7 +1107,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1097,7 +1129,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when size is greater than the configured max size" in {
@@ -1111,7 +1143,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1134,7 +1165,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when lastUpdated is invalid" in {
@@ -1148,7 +1179,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1171,7 +1201,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when there is no correlation-id header" in {
@@ -1184,7 +1214,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1207,7 +1236,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when there is no forwarded-host header" in {
@@ -1220,7 +1249,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1243,7 +1271,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result) mustBe empty
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when there is no date header" in {
@@ -1256,7 +1284,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1279,7 +1306,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return an error when there is an invalid date header" in {
@@ -1293,7 +1320,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
@@ -1316,7 +1342,7 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return forbidden with no body when there is no authorization header" in {
@@ -1329,13 +1355,11 @@ class GoodsItemRecordsControllerSpec
           "Date" -> formattedDate
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
-
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
     "must return forbidden with no body when there is an invalid authorization header" in {
@@ -1349,13 +1373,11 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-other-token"
         )
 
-      when(mockRepository.getById(any, any)).thenReturn(Future.successful(None))
-
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).get(any, any, any, any)
+      verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
   }
 
@@ -1393,7 +1415,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.update(any)).thenReturn(Future.successful(Some(record)))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.update(any)).thenReturn(Future.successful(Some(record)))
 
       val result = route(app, request).value
 
@@ -1404,7 +1427,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).update(requestBody)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).update(requestBody)
     }
 
     "must not update a record and return an error when the record does not exist in the database" in {
@@ -1419,7 +1443,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.update(any)).thenReturn(Future.successful(None))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.update(any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
 
@@ -1441,7 +1466,46 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).update(requestBody)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).update(requestBody)
+    }
+
+    "must not update a record and return an error when there is no profile matching the eori" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(false))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 007, message: Invalid Request Parameter"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return an error when the updated traderRef is not unique within the database" in {
@@ -1456,7 +1520,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.update(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
 
       val result = route(app, request).value
 
@@ -1478,7 +1543,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).update(requestBody)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).update(requestBody)
     }
 
     "must not update a record and return an error when the record is inactive" in {
@@ -1493,7 +1559,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.update(any)).thenReturn(Future.failed(RecordInactiveException))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(RecordInactiveException))
 
       val result = route(app, request).value
 
@@ -1515,7 +1582,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).update(requestBody)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).update(requestBody)
     }
 
     "must not update a record and return an error when the record is locked" in {
@@ -1530,7 +1598,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.update(any)).thenReturn(Future.failed(RecordLockedException))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(RecordLockedException))
 
       val result = route(app, request).value
 
@@ -1552,7 +1621,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).update(requestBody)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).update(requestBody)
     }
 
     "must not update a record and return an error when there is no correlation-id header" in {
@@ -1587,7 +1657,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return an error when there is no forwarded-host header" in {
@@ -1622,7 +1693,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result) mustBe empty
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return an error when there is no date header" in {
@@ -1657,7 +1729,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return an error when there is an invalid date header" in {
@@ -1693,7 +1766,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return an error when there is no content-type header" in {
@@ -1728,7 +1802,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return an error when there is an invalid content-type header" in {
@@ -1764,7 +1839,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return an error when the request body can't be parsed as json" in {
@@ -1800,7 +1876,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return an error when there are json schema violations" in {
@@ -1842,11 +1919,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).update(any)
-    }
-
-    "must not update a record and return an error when there is no profile matching the eori" ignore {
-      // TODO
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return forbidden with no body when there is no authorization header" in {
@@ -1866,7 +1940,8 @@ class GoodsItemRecordsControllerSpec
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must not update a record and return forbidden with no body when there is an invalid authorization header" in {
@@ -1887,7 +1962,8 @@ class GoodsItemRecordsControllerSpec
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).update(any)
+      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockGoodsItemRepository, never).update(any)
     }
   }
 
@@ -1914,7 +1990,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.deactivate(any)).thenReturn(Future.successful(Some(record)))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.deactivate(any)).thenReturn(Future.successful(Some(record)))
 
       val result = route(app, request).value
 
@@ -1924,7 +2001,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).deactivate(requestBody)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).deactivate(requestBody)
     }
 
     "must return an error when the record does not exist" in {
@@ -1938,7 +2016,8 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.deactivate(any)).thenReturn(Future.successful(None))
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockGoodsItemRepository.deactivate(any)).thenReturn(Future.successful(None))
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -1960,11 +2039,45 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository).deactivate(any)
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository).deactivate(any)
     }
 
-    "must return an error when there is no profile matching the eori" ignore {
-      // TODO
+    "must return an error when there is no profile matching the eori" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(false))
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 007, message: Invalid Request Parameter"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
     "must not deactivate the given record and return an error when there is no correlation-id header" in {
@@ -1999,7 +2112,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
     "must not deactivate the given record and return an error when there is no forward-host header" in {
@@ -2034,7 +2148,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result) mustBe empty
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
     "must not deactivate the given record and return an error when there is no date header" in {
@@ -2069,7 +2184,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
     "must not deactivate the given record and return an error when there is an invalid date header" in {
@@ -2089,7 +2205,8 @@ class GoodsItemRecordsControllerSpec
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
     "must not update a record and return an error when there is no content-type header" in {
@@ -2103,7 +2220,7 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
+      when(mockGoodsItemRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -2125,7 +2242,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
     "must not update a record and return an error when there is an invalid content-type header" in {
@@ -2140,7 +2258,7 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
+      when(mockGoodsItemRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -2162,7 +2280,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
     "must not update a record and return an error when the request body can't be parsed as json" in {
@@ -2196,7 +2315,8 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
     "must not create a record and return an error when there are json schema violations" in {
@@ -2216,7 +2336,6 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val expectedResponse = ErrorResponse(
@@ -2239,10 +2358,11 @@ class GoodsItemRecordsControllerSpec
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
-    "must return forbidden with no body when there is no authorization header" in {
+    "must return forbidden with no body when there is an invalid authorization header" in {
 
       val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord())
         .withHeaders(
@@ -2254,14 +2374,35 @@ class GoodsItemRecordsControllerSpec
           "Authorization" -> "some-other-token"
         )
 
-      when(mockRepository.insert(any)).thenReturn(Future.successful(record))
       when(mockUuidService.generate()).thenReturn(correlationId)
 
       val result = route(app, request).value
 
       status(result) mustEqual FORBIDDEN
 
-      verify(mockRepository, never).deactivate(any)
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
+    }
+
+    "must return forbidden with no body when there is no authorization header" in {
+
+      val request = FakeRequest(routes.GoodsItemRecordsController.removeRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "text/xml",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual FORBIDDEN
+
+      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockGoodsItemRepository, never).deactivate(any)
     }
   }
 

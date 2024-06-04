@@ -16,19 +16,20 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 
-import cats.data.EitherNec
+import cats.data.{EitherNec, EitherT}
 import cats.syntax.all._
+import org.apache.pekko.Done
 import org.everit.json.schema.Schema
+import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Reads}
 import play.api.mvc._
-import play.api.{Configuration, Environment}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.{ValidatedHeaders, ValidatedParams}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
 import java.time.format.DateTimeFormatter
@@ -41,10 +42,10 @@ import scala.util.Try
 class GoodsItemRecordsController @Inject()(
                                             override val controllerComponents: ControllerComponents,
                                             goodsItemRecordRepository: GoodsItemRecordRepository,
+                                            traderProfilesRepository: TraderProfileRepository,
                                             uuidService: UuidService,
                                             clock: Clock,
                                             configuration: Configuration,
-                                            environment: Environment,
                                             schemaValidationService: SchemaValidationService
                                           )(implicit ec: ExecutionContext) extends BackendBaseController {
 
@@ -63,13 +64,12 @@ class GoodsItemRecordsController @Inject()(
   def createRecord(): Action[RawBuffer] = Action.async(parse.raw) { implicit request =>
 
     val result = for {
-      _                <- validateAuthorization(request)
-      validatedHeaders <- validatePostHeaders(request)
-      body             <- validateRequestBody[CreateGoodsItemRecordRequest](request, createRecordSchema)
+      _                <- EitherT.fromEither[Future](validateAuthorization(request))
+      validatedHeaders <- EitherT.fromEither[Future](validatePostHeaders(request))
+      body             <- EitherT.fromEither[Future](validateRequestBody[CreateGoodsItemRecordRequest](request, createRecordSchema))
+      _                <- validateEoriExists(body.eori)
     } yield {
-
       goodsItemRecordRepository.insert(body).map { goodsItemRecord =>
-
         Created(goodsItemRecord.toCreateRecordResponse)
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
@@ -77,7 +77,6 @@ class GoodsItemRecordsController @Inject()(
             "Content-Type" -> "application/json"
           )
       }.recover { case DuplicateEoriAndTraderRefException =>
-
         BadRequest(Json.toJson(ErrorResponse(
           correlationId = validatedHeaders.correlationId,
           timestamp = clock.instant(),
@@ -94,11 +93,10 @@ class GoodsItemRecordsController @Inject()(
       }
     }
 
-    result.leftMap(Future.successful).merge
+    result.leftMap(Future.successful).merge.flatten
   }
 
   def getRecords(eori: String): Action[AnyContent] = Action.async { implicit request =>
-
     val result = for {
       _                <- validateAuthorization(request)
       validatedHeaders <- validateGetHeaders(request)
@@ -146,13 +144,12 @@ class GoodsItemRecordsController @Inject()(
   def updateRecord(): Action[RawBuffer] = Action.async(parse.raw) { implicit request =>
 
     val result = for {
-      _                <- validateAuthorization(request)
-      validatedHeaders <- validatePostHeaders(request)
-      body             <- validateRequestBody[UpdateGoodsItemRecordRequest](request, updateRecordSchema)
+      _                <- EitherT.fromEither[Future](validateAuthorization(request))
+      validatedHeaders <- EitherT.fromEither[Future](validatePostHeaders(request))
+      body             <- EitherT.fromEither[Future](validateRequestBody[UpdateGoodsItemRecordRequest](request, updateRecordSchema))
+      _                <- validateEoriExists(body.eori)
     } yield {
-
       goodsItemRecordRepository.update(body).map {
-
         _.map { goodsItemRecord =>
           Ok(goodsItemRecord.toCreateRecordResponse)
         }.getOrElse {
@@ -212,15 +209,16 @@ class GoodsItemRecordsController @Inject()(
       }
     }
 
-    result.leftMap(Future.successful).merge
+    result.leftMap(Future.successful).merge.flatten
   }
 
   def removeRecord(): Action[RawBuffer] = Action.async(parse.raw) { implicit request =>
 
     val result = for {
-      _                <- validateAuthorization(request)
-      validatedHeaders <- validatePostHeaders(request)
-      body             <- validateRequestBody[RemoveGoodsItemRecordRequest](request, removeRecordSchema)
+      _                <- EitherT.fromEither[Future](validateAuthorization(request))
+      validatedHeaders <- EitherT.fromEither[Future](validatePostHeaders(request))
+      body             <- EitherT.fromEither[Future](validateRequestBody[RemoveGoodsItemRecordRequest](request, removeRecordSchema))
+      _                <- validateEoriExists(body.eori)
     } yield {
 
       goodsItemRecordRepository.deactivate(body).map {
@@ -244,7 +242,7 @@ class GoodsItemRecordsController @Inject()(
       }
     }
 
-    result.leftMap(Future.successful).merge
+    result.leftMap(Future.successful).merge.flatten
   }
 
   private def validateAuthorization(request: Request[_]): Either[Result, _] =
@@ -430,6 +428,38 @@ class GoodsItemRecordsController @Inject()(
         ))).withHeaders(headers: _*)
       }
     }
+  }
+
+  private def validateEoriExists(eori: String)(implicit request: Request[_]): EitherT[Future, Result, Done] = {
+
+    val result = traderProfilesRepository.exists(eori).map { exists =>
+      if (exists) {
+        Done.asRight[Result]
+      } else {
+
+        val correlationId = request.headers.get("X-Correlation-Id").getOrElse(uuidService.generate())
+        val forwardedHost = request.headers.get("X-Forwarded-Host")
+
+        val headers = Seq(
+          Some("X-Correlation-Id" -> correlationId),
+          forwardedHost.map("X-Forwarded-Host" -> _),
+          Some("Content-Type" -> "application/json")
+        ).flatten
+
+        BadRequest(Json.toJson(ErrorResponse(
+          correlationId = correlationId,
+          timestamp = clock.instant(),
+          errorCode = "400",
+          errorMessage = "Bad Request",
+          source = "BACKEND",
+          detail = Seq(
+            "error: 007, message: Invalid Request Parameter"
+          )
+        ))).withHeaders(headers: _*).asLeft[Done]
+      }
+    }
+
+    EitherT(result)
   }
 }
 
