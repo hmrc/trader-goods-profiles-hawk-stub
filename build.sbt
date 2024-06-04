@@ -13,6 +13,7 @@ lazy val microservice = Project("trader-goods-profiles-hawk-stub", file("."))
   )
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(CodeCoverageSettings.settings: _*)
+  .settings(PlayKeys.playDefaultPort := 10908)
 
 lazy val it = project
   .enablePlugins(PlayScala)
