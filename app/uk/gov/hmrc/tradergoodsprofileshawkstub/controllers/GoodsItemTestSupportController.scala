@@ -20,7 +20,6 @@ import play.api.mvc.{Action, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.PatchGoodsItemRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.RecordNotFoundException
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
@@ -35,10 +34,6 @@ class GoodsItemTestSupportController @Inject()(
 
     goodsItemRecordRepository
       .patch(request.body)
-      .map(_ => Ok)
-      .recover {
-        case RecordNotFoundException =>
-          NotFound
-      }
+      .map(_.map(_ => Ok).getOrElse(NotFound))
   }
 }

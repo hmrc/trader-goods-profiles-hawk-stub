@@ -28,7 +28,7 @@ import uk.gov.hmrc.mongo.transaction.{TransactionConfiguration, Transactions}
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException, RecordNotFoundException}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.{Clock, Instant}
@@ -168,7 +168,7 @@ class GoodsItemRecordRepository @Inject() (
     }
   }
 
-  def patch(request: PatchGoodsItemRequest): Future[Done] = Mdc.preservingMdc {
+  def patch(request: PatchGoodsItemRequest): Future[Option[Done]] = Mdc.preservingMdc {
 
     val updates = Seq(
       request.accreditationStatus.map(x => Updates.set("metadata.accreditationStatus", x.toString)),
@@ -189,12 +189,9 @@ class GoodsItemRecordRepository @Inject() (
         ),
         Updates.combine(updates: _*),
         FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
-      ).toFutureOption().flatMap {
-        _.map(_ => Future.successful(Done))
-          .getOrElse(Future.failed(RecordNotFoundException))
-      }
+      ).toFutureOption().map(_.map(_ => Done))
     } else {
-      Future.successful(Done)
+      Future.successful(Some(Done))
     }
   }
 
@@ -270,5 +267,4 @@ object GoodsItemRecordRepository {
   final case object DuplicateEoriAndTraderRefException extends Throwable with NoStackTrace
   final case object RecordLockedException extends Throwable with NoStackTrace
   final case object RecordInactiveException extends Throwable with NoStackTrace
-  final case object RecordNotFoundException extends Throwable with NoStackTrace
 }

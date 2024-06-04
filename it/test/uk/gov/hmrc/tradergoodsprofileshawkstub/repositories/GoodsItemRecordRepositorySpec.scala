@@ -20,10 +20,10 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mongodb.scala.model.Filters
 import org.scalactic.source.Position
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.slf4j.MDC
@@ -35,7 +35,7 @@ import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.play.bootstrap.dispatchers.MDCPropagatingExecutorService
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException, RecordNotFoundException}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.temporal.ChronoUnit
@@ -643,8 +643,9 @@ class GoodsItemRecordRepositorySpec
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      repository.patch(request).futureValue
+      val result = repository.patch(request).futureValue
 
+      result mustBe defined
       repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual expectedResult
     }
 
@@ -685,8 +686,9 @@ class GoodsItemRecordRepositorySpec
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      repository.patch(request).futureValue
+      val result = repository.patch(request).futureValue
 
+      result mustBe defined
       repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual expectedResult
     }
 
@@ -709,12 +711,13 @@ class GoodsItemRecordRepositorySpec
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      repository.patch(request).futureValue
+      val result = repository.patch(request).futureValue
 
+      result mustBe defined
       repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
     }
 
-    "must fail when asked to update a record that does not exist" in {
+    "must return None when asked to update a record that does not exist" in {
 
       val record = generateRecord
 
@@ -733,9 +736,9 @@ class GoodsItemRecordRepositorySpec
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      val result = repository.patch(request).failed.futureValue
+      val result = repository.patch(request).futureValue
 
-      result mustBe RecordNotFoundException
+      result must not be defined
     }
   }
 

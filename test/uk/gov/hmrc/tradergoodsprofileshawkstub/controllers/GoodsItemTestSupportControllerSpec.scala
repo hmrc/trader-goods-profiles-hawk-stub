@@ -34,7 +34,6 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.PatchGoodsItemRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.RecordNotFoundException
 
 import scala.concurrent.Future
 
@@ -66,7 +65,7 @@ class GoodsItemTestSupportControllerSpec
 
     "must patch a record and return OK when the patch succeeds in the database" in {
 
-      when(mockRepository.patch(any)).thenReturn(Future.successful(Done))
+      when(mockRepository.patch(any)).thenReturn(Future.successful(Some(Done)))
 
       val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None, None)
 
@@ -82,7 +81,7 @@ class GoodsItemTestSupportControllerSpec
 
     "must return Not Found when a record doesn't exist to patch" in {
 
-      when(mockRepository.patch(any)).thenReturn(Future.failed(RecordNotFoundException))
+      when(mockRepository.patch(any)).thenReturn(Future.successful(None))
 
       val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None, None)
 
