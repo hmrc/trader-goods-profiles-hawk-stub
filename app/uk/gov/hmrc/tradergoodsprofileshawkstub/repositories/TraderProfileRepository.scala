@@ -63,7 +63,7 @@ class TraderProfileRepository @Inject() (
 
   def exists(eori: String): Future[Boolean] =
     collection.find(Filters.eq("eori", eori))
-      .headOption.map(_.isDefined)
+      .headOption().map(_.isDefined)
 }
 
 object TraderProfileRepository {
