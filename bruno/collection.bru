@@ -1,0 +1,21 @@
+headers {
+  X-Correlation-ID: {{correlationId}}
+  X-Forwarded-Host: {{forwardedHost}}
+  Date: {{now}}
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: c29tZS10b2tlbgo=
+}
+
+script:pre-request {
+  const { v4: uuidv4 } = require('uuid');
+  
+  bru.setVar("now", new Date().toGMTString());
+  bru.setVar("correlationId", uuidv4());
+  bru.setVar("forwardedHost", "test");
+}

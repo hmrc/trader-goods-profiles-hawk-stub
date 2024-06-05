@@ -1,0 +1,25 @@
+meta {
+  name: Remove Goods Item Record
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/tgp/removerecord/v1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "eori": "{{eori}}",
+    "actorId": "{{actorId}}",
+    "recordId": "{{recordId}}"
+  }
+}
+
+vars:pre-request {
+  eori: GB123456789012
+  actorId: GB098765432112
+  recordId: AAAAAAAAAABBBBBBBBBB1111111111222222
+}
