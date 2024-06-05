@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "name": "trader-goods-profiles-hawk-stubs",
+  "type": "collection",
+  "ignore": [
+    ".git"
+  ],
+  "presets": {
+    "requestType": "http",
+    "requestUrl": "http://localhost:10908"
+  }
+}

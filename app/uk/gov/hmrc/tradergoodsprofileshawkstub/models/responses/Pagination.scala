@@ -33,12 +33,16 @@ object Pagination {
     Json.format
   }
 
-  def apply(totalRecords: Int, page: Int, size: Int): Pagination =
+  def apply(totalRecords: Int, page: Int, size: Int): Pagination = {
+
+    val totalPages = (totalRecords.toDouble / size).ceil.toInt
+
     Pagination(
       totalRecords = totalRecords,
       currentPage = page,
-      totalPages = totalRecords / size,
-      nextPage = Option.when(page < (totalRecords / size) - 1)(page + 1),
-      previousPage = Option.when(page > 0)(page.min(totalRecords / size) - 1)
+      totalPages = totalPages,
+      nextPage = Option.when(page < totalPages - 1)(page + 1),
+      previousPage = Option.when(page > 0)(page.min(totalRecords) - 1)
     )
+  }
 }

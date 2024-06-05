@@ -62,5 +62,18 @@ class PaginationSpec extends AnyFreeSpec with Matchers {
 
       Pagination(totalRecords = 1, page = 9, size = 1) mustEqual expected
     }
+
+    "must return the correct number of pages when there is an extra non-full page of results" in {
+
+      val expected = Pagination(
+        totalRecords = 5,
+        currentPage = 0,
+        totalPages = 2,
+        nextPage = Some(1),
+        previousPage = None
+      )
+
+      Pagination(totalRecords = 5, page = 0, size = 3) mustEqual expected
+    }
   }
 }

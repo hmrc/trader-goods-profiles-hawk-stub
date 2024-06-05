@@ -1,0 +1,47 @@
+meta {
+  name: Update Goods Item Record
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/tgp/updaterecord/v1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "eori": "{{eori}}",
+    "actorId": "{{traderId}}",
+    "recordId": "{{recordId}}",
+    "traderRef": "{{traderRef}}",
+    "comcode": "104101000",
+    "goodsDescription": "Organic bananas",
+    "countryOfOrigin": "EC",
+    "category": 1,
+    "assessments": [
+      {
+        "assessmentId": "abc123",
+        "primaryCategory": 1,
+        "condition": {
+          "type": "abc123",
+          "conditionId": "Y923",
+          "conditionDescription": "Products not considered as waste according to Regulation (EC) No 1013/2006 as retained in UK law",
+          "conditionTraderText": "Excluded product"
+        }
+      }
+    ],
+    "supplementaryUnit": 500,
+    "measurementUnit": "Square metre (m2)",
+    "comcodeEffectiveFromDate": "2024-11-18T23:20:19Z",
+    "comcodeEffectiveToDate": "2024-11-18T23:20:19Z"
+  }
+}
+
+vars:pre-request {
+  eori: GB123456789012
+  traderId: GB098765432112
+  recordId: AAAAAAAAAABBBBBBBBBB1111111111222222
+  traderRef: BAN001001
+}

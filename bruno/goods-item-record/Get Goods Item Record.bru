@@ -1,0 +1,16 @@
+meta {
+  name: Get Goods Item Record
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/tgp/getrecords/v1/{{eori}}/{{recordId}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  eori: GB123456789012
+  recordId: 3f5945ab-b9e8-42b7-903c-85d0a92b1d48
+}

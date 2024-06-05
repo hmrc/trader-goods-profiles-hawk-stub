@@ -1,0 +1,21 @@
+meta {
+  name: Get Goods Item Records
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/tgp/getrecords/v1/{{eori}}?page=0&size=2
+  body: none
+  auth: inherit
+}
+
+query {
+  page: 0
+  size: 2
+  ~lastUpdated: 2024-03-02T12:30:45Z
+}
+
+vars:pre-request {
+  eori: GB123456789012
+}

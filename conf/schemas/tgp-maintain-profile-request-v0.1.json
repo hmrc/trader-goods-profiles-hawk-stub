@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "TGPH11 Maintain TGP Profile request",
+  "description": "Maintain TGP Profile v0.1",
+  "type": "object",
+  "properties": {
+    "eori": {
+      "description": "Identity of the trader as known to HMRC.",
+      "type": "string",
+      "minLength": 14,
+      "maxLength": 17
+    },
+    "actorId": {
+      "description": "EORI number of the user making the change, which may be different to the trader.",
+      "type": "string",
+      "minLength": 14,
+      "maxLength": 17
+    },
+    "ukimsNumber": {
+      "description": "UK Internal Market Scheme registration number.",
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 32
+    },
+    "nirmsNumber": {
+      "description": "Northern Ireland Retail Movement Scheme registration number",
+      "type": "string",
+      "minLength": 13,
+      "maxLength": 13
+    },
+    "niphlNumber": {
+      "description": "Northern Ireland Plant Health Label scheme registration number",
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 8
+    }
+  },
+  "required": [
+    "eori",
+    "actorId"
+  ],
+  "additionalProperties": false,
+  "javaType": "MaintainTGPProfileRequest"
+}

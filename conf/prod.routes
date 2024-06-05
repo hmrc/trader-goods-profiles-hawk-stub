@@ -6,7 +6,7 @@ GET        /tgp/getrecords/v1/:eori/:recordId     uk.gov.hmrc.tradergoodsprofile
 PUT        /tgp/updaterecord/v1                   uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.updateRecord()
 PUT        /tgp/removerecord/v1                   uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.removeRecord()
 
-PUT        /tgp/maintainprofile/v1                uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.ProfilesController.maintainProfile()
+PUT        /tgp/maintainprofile/v1                uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.TraderProfilesController.maintainProfile()
 
 PATCH      /test-support/goods-item              uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemTestSupportController.patch()
 
