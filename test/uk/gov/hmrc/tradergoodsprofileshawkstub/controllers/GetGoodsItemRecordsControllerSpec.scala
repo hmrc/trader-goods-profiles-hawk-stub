@@ -970,7 +970,7 @@ class GetGoodsItemRecordsControllerSpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      declarable = "declarable",
+      declarable = Declarable.NotReady,
       ukimsNumber = None,
       nirmsNumber = None,
       niphlNumber = None,

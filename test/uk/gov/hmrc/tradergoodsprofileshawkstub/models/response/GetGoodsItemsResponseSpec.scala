@@ -20,7 +20,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsNull, Json}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{AccreditationStatus, Assessment, GoodsItem, GoodsItemMetadata, GoodsItemRecord}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{AccreditationStatus, Assessment, Declarable, GoodsItem, GoodsItemMetadata, GoodsItemRecord}
 
 import java.time.{Clock, Instant, ZoneOffset}
 import java.time.temporal.ChronoUnit
@@ -63,7 +63,7 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
           locked = false,
           toReview = false,
           reviewReason = None,
-          declarable = "declarable",
+          declarable = Declarable.NotReady,
           ukimsNumber = None,
           nirmsNumber = None,
           niphlNumber = None,

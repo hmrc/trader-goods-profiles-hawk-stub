@@ -83,7 +83,7 @@ class GoodsItemRecordRepository @Inject() (
         locked = false,
         toReview = false,
         reviewReason = None,
-        declarable = "declarable", // TODO what should this be?
+        declarable = Declarable.NotReady,
         ukimsNumber = None,
         nirmsNumber = None,
         niphlNumber = None,
