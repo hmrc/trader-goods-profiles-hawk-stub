@@ -95,23 +95,6 @@ class GetGoodsItemRecordsController @Inject()(
     result.leftMap(Future.successful).merge
   }
 
-  private def validateHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] = {
-    (
-      validateCorrelationId,
-      validateForwardedHost,
-      validateDate
-    ).parMapN { (correlationId, forwardedHost, _) =>
-      ValidatedHeaders(correlationId, forwardedHost)
-    }.leftMap { errors =>
-      badRequest(
-        errorCode = "400",
-        errorMessage = "Bad Request",
-        source = "BACKEND",
-        detail = errors.toList
-      )
-    }
-  }
-
   private def validatePage(implicit request: Request[_]): EitherNec[String, Option[Int]] =
     request.getQueryString("page").traverse { string =>
       string.toIntOption
