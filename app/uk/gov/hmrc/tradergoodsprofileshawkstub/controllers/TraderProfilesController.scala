@@ -24,7 +24,7 @@ import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Reads}
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
-import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemRecordsController.ValidatedHeaders
+import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.TraderProfilesController.ValidatedHeaders
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.MaintainTraderProfileRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository
@@ -180,4 +180,9 @@ class TraderProfilesController @Inject()(
       }
     }
   }
+}
+
+object TraderProfilesController {
+
+  final case class ValidatedHeaders(correlationId: String, forwardedHost: String)
 }
