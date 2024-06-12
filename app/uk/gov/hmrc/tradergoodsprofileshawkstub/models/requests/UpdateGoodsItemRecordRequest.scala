@@ -17,7 +17,7 @@
 package uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests
 
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.Assessment
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{Assessment, Category}
 
 import java.time.Instant
 
@@ -29,7 +29,7 @@ final case class UpdateGoodsItemRecordRequest(
                                                comcode: Option[String],
                                                goodsDescription: Option[String],
                                                countryOfOrigin: Option[String],
-                                               category: Option[Int],
+                                               category: Option[Category],
                                                assessments: Option[Seq[Assessment]],
                                                supplementaryUnit: Option[BigDecimal],
                                                measurementUnit: Option[String],

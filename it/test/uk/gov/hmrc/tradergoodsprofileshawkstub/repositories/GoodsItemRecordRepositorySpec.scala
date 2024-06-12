@@ -89,11 +89,11 @@ class GoodsItemRecordRepositorySpec
       comcode = "comcode",
       goodsDescription = "goodsDescription",
       countryOfOrigin = "countryOfOrigin",
-      category = 1,
+      category = Category.Controlled,
       assessments = Some(Seq(
         Assessment(
           assessmentId = Some("assessmentId"),
-          primaryCategory = Some(2),
+          primaryCategory = Some(Category.Controlled),
           condition = Some(Condition(
             `type` = Some("type"),
             conditionId = Some("conditionId"),
@@ -250,11 +250,11 @@ class GoodsItemRecordRepositorySpec
           comcode = Some("anotherComcode"),
           goodsDescription = Some("anotherGoodsDescription"),
           countryOfOrigin = Some("anotherCountryOfOrigin"),
-          category = Some(2),
+          category = Some(Category.Excluded),
           assessments = Some(Seq(
             Assessment(
               assessmentId = Some("anotherAssessmentId"),
-              primaryCategory = Some(3),
+              primaryCategory = Some(Category.Standard),
               condition = Some(
                 Condition(
                   `type` = Some("anotherType"),
@@ -280,11 +280,11 @@ class GoodsItemRecordRepositorySpec
             comcode = "anotherComcode",
             goodsDescription = "anotherGoodsDescription",
             countryOfOrigin = "anotherCountryOfOrigin",
-            category = 2,
+            category = Category.Excluded,
             assessments = Seq(
               Assessment(
                 assessmentId = Some("anotherAssessmentId"),
-                primaryCategory = Some(3),
+                primaryCategory = Some(Category.Standard),
                 condition = Some(Condition(
                   `type` = Some("anotherType"),
                   conditionId = Some("anotherConditionId"),
@@ -357,11 +357,11 @@ class GoodsItemRecordRepositorySpec
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = 1,
+            category = Category.Controlled,
             assessments = Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
-                primaryCategory = Some(2),
+                primaryCategory = Some(Category.Controlled),
                 condition = Some(Condition(
                   `type` = Some("type"),
                   conditionId = Some("conditionId"),
@@ -412,11 +412,11 @@ class GoodsItemRecordRepositorySpec
           comcode = Some("anotherComcode"),
           goodsDescription = Some("anotherGoodsDescription"),
           countryOfOrigin = Some("anotherCountryOfOrigin"),
-          category = Some(2),
+          category = Some(Category.Excluded),
           assessments = Some(Seq(
             Assessment(
               assessmentId = Some("anotherAssessmentId"),
-              primaryCategory = Some(3),
+              primaryCategory = Some(Category.Standard),
               condition = Some(
                 Condition(
                   `type` = Some("anotherType"),
@@ -454,11 +454,11 @@ class GoodsItemRecordRepositorySpec
           comcode = Some("anotherComcode"),
           goodsDescription = Some("anotherGoodsDescription"),
           countryOfOrigin = Some("anotherCountryOfOrigin"),
-          category = Some(2),
+          category = Some(Category.Excluded),
           assessments = Some(Seq(
             Assessment(
               assessmentId = Some("anotherAssessmentId"),
-              primaryCategory = Some(3),
+              primaryCategory = Some(Category.Standard),
               condition = Some(
                 Condition(
                   `type` = Some("anotherType"),
@@ -495,11 +495,11 @@ class GoodsItemRecordRepositorySpec
           comcode = Some("anotherComcode"),
           goodsDescription = Some("anotherGoodsDescription"),
           countryOfOrigin = Some("anotherCountryOfOrigin"),
-          category = Some(2),
+          category = Some(Category.Excluded),
           assessments = Some(Seq(
             Assessment(
               assessmentId = Some("anotherAssessmentId"),
-              primaryCategory = Some(3),
+              primaryCategory = Some(Category.Standard),
               condition = Some(
                 Condition(
                   `type` = Some("anotherType"),
@@ -537,11 +537,11 @@ class GoodsItemRecordRepositorySpec
         comcode = Some("anotherComcode"),
         goodsDescription = Some("anotherGoodsDescription"),
         countryOfOrigin = Some("anotherCountryOfOrigin"),
-        category = Some(2),
+        category = Some(Category.Excluded),
         assessments = Some(Seq(
           Assessment(
             assessmentId = Some("anotherAssessmentId"),
-            primaryCategory = Some(3),
+            primaryCategory = Some(Category.Standard),
             condition = Some(
               Condition(
                 `type` = Some("anotherType"),
@@ -576,11 +576,11 @@ class GoodsItemRecordRepositorySpec
         comcode = Some("anotherComcode"),
         goodsDescription = Some("anotherGoodsDescription"),
         countryOfOrigin = Some("anotherCountryOfOrigin"),
-        category = Some(2),
+        category = Some(Category.Excluded),
         assessments = Some(Seq(
           Assessment(
             assessmentId = Some("anotherAssessmentId"),
-            primaryCategory = Some(3),
+            primaryCategory = Some(Category.Standard),
             condition = Some(
               Condition(
                 `type` = Some("anotherType"),
@@ -793,11 +793,11 @@ class GoodsItemRecordRepositorySpec
       comcode = "comcode",
       goodsDescription = "goodsDescription",
       countryOfOrigin = "countryOfOrigin",
-      category = 1,
+      category = Category.Controlled,
       assessments = Seq(
         Assessment(
           assessmentId = Some("assessmentId"),
-          primaryCategory = Some(2),
+          primaryCategory = Some(Category.Controlled),
           condition = Some(Condition(
             `type` = Some("type"),
             conditionId = Some("conditionId"),

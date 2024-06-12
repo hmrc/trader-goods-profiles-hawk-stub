@@ -23,7 +23,6 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GetGoodsItemRecordsController.ValidatedParams
-import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.ValidationRules.ValidatedHeaders
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.actions.HeaderPropagationFilter
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}

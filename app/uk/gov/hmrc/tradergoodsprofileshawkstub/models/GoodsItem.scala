@@ -28,7 +28,7 @@ final case class GoodsItem(
                             comcode: String,
                             goodsDescription: String,
                             countryOfOrigin: String,
-                            category: Int,
+                            category: Category,
                             assessments: Seq[Assessment],
                             supplementaryUnit: Option[BigDecimal],
                             measurementUnit: Option[String],

@@ -45,11 +45,11 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = 1,
+            category = Category.Controlled,
             assessments = Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
-                primaryCategory = Some(2),
+                primaryCategory = Some(Category.Controlled),
                 condition = Some(Condition(
                   `type` = Some("type"),
                   conditionId = Some("conditionId"),
@@ -121,7 +121,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = 1,
+            category = Category.Controlled,
             assessments = Seq(
               Assessment(
                 assessmentId = None,
@@ -191,11 +191,11 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = 1,
+            category = Category.Controlled,
             assessments = Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
-                primaryCategory = Some(2),
+                primaryCategory = Some(Category.Controlled),
                 condition = Some(Condition(
                   `type` = Some("type"),
                   conditionId = Some("conditionId"),
@@ -269,7 +269,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = 1,
+            category = Category.Controlled,
             assessments = Seq(
               Assessment(
                 assessmentId = None,
