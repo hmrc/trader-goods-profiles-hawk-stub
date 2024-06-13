@@ -35,8 +35,6 @@ class HeaderPropagationFilter @Inject() (
         .orElse(result.header.headers.get("X-Correlation-Id"))
         .getOrElse(uuidService.generate())
 
-      println(result.header.headers)
-
       val forwardedHost = request.headers.get("X-Forwarded-Host")
 
       val headers = Seq(

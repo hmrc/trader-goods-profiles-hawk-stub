@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.models
 
-import play.api.libs.json.{Format, Json}
+import enumeratum.{EnumEntry, PlayEnum}
 
-final case class Assessment(
-                             assessmentId: Option[String],
-                             primaryCategory: Option[Category],
-                             condition: Option[Condition]
-                           )
+sealed abstract class Declarable(override val entryName: String) extends EnumEntry
 
-object Assessment {
+object Declarable extends PlayEnum[Declarable] {
 
-  implicit val format: Format[Assessment] = Json.format[Assessment]
+  override def values: IndexedSeq[Declarable] = findValues
+
+  case object ImmiReady extends Declarable("IMMI ready")
+  case object ImmiNotReady extends Declarable("not ready for IMMI")
+  case object NotReady extends Declarable("not ready for use")
 }

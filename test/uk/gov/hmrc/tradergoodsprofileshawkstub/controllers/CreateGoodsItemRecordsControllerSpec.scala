@@ -579,11 +579,11 @@ class CreateGoodsItemRecordsControllerSpec
       comcode = "comcode",
       goodsDescription = "goodsDescription",
       countryOfOrigin = "GB",
-      category = 1,
+      category = Category.Controlled,
       assessments = Seq(
         Assessment(
           assessmentId = Some("assessmentId"),
-          primaryCategory = Some(2),
+          primaryCategory = Some(Category.Controlled),
           condition = Some(Condition(
             `type` = Some("type"),
             conditionId = Some("1234567890"),
@@ -604,7 +604,7 @@ class CreateGoodsItemRecordsControllerSpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      declarable = "declarable",
+      declarable = Declarable.NotReady,
       ukimsNumber = None,
       nirmsNumber = None,
       niphlNumber = None,

@@ -53,7 +53,7 @@ class GoodsItemRecordRepository @Inject() (
     Codecs.playFormatCodec(GetGoodsItemRecordsResult.mongoFormat),
     Codecs.playFormatCodec(Assessment.format),
     Codecs.playFormatCodec(implicitly[Format[BigDecimal]])
-  )
+  ) ++ Codecs.playFormatSumCodecs(implicitly[Format[Category]])
 ) with Transactions {
 
   private implicit val tc: TransactionConfiguration = TransactionConfiguration.strict
@@ -83,7 +83,7 @@ class GoodsItemRecordRepository @Inject() (
         locked = false,
         toReview = false,
         reviewReason = None,
-        declarable = "declarable", // TODO what should this be?
+        declarable = Declarable.NotReady,
         ukimsNumber = None,
         nirmsNumber = None,
         niphlNumber = None,

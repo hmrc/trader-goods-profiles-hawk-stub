@@ -23,7 +23,6 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GetGoodsItemRecordsController.ValidatedParams
-import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.ValidationRules.ValidatedHeaders
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.actions.HeaderPropagationFilter
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}
@@ -93,23 +92,6 @@ class GetGoodsItemRecordsController @Inject()(
     }
 
     result.leftMap(Future.successful).merge
-  }
-
-  private def validateHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] = {
-    (
-      validateCorrelationId,
-      validateForwardedHost,
-      validateDate
-    ).parMapN { (correlationId, forwardedHost, _) =>
-      ValidatedHeaders(correlationId, forwardedHost)
-    }.leftMap { errors =>
-      badRequest(
-        errorCode = "400",
-        errorMessage = "Bad Request",
-        source = "BACKEND",
-        detail = errors.toList
-      )
-    }
   }
 
   private def validatePage(implicit request: Request[_]): EitherNec[String, Option[Int]] =
