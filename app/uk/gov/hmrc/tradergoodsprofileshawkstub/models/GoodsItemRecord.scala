@@ -18,13 +18,15 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models
 
 import play.api.libs.json.{JsNull, JsObject, Json, OFormat}
 
+import java.time.Instant
+
 final case class GoodsItemRecord(
                                   recordId: String,
                                   goodsItem: GoodsItem,
                                   metadata: GoodsItemMetadata
                                 ) {
 
-  def toCreateRecordResponse: JsObject = Json.toJsObject(Json.obj(
+  def toCreateRecordResponse(now: Instant): JsObject = Json.toJsObject(Json.obj(
     "recordId" -> recordId,
     "eori" -> goodsItem.eori,
     "actorId" -> goodsItem.actorId,
@@ -43,7 +45,7 @@ final case class GoodsItemRecord(
     "active" -> metadata.active,
     "toReview" -> metadata.toReview,
     "reviewReason" -> metadata.reviewReason,
-    "declarable" -> metadata.declarable,
+    "declarable" -> declarable(now),
     "ukimsNumber" -> metadata.ukimsNumber,
     "nirmsNumber" -> metadata.nirmsNumber,
     "niphlNumber" -> metadata.niphlNumber,
@@ -51,7 +53,7 @@ final case class GoodsItemRecord(
     "updatedDateTime" -> metadata.updatedDateTime
   ).fields.filterNot(_._2 == JsNull).toMap)
 
-  def toGetRecordResponse: JsObject = Json.toJsObject(Json.obj(
+  def toGetRecordResponse(now: Instant): JsObject = Json.toJsObject(Json.obj(
     "recordId" -> recordId,
     "eori" -> goodsItem.eori,
     "actorId" -> goodsItem.actorId,
@@ -70,7 +72,7 @@ final case class GoodsItemRecord(
     "active" -> metadata.active,
     "toReview" -> metadata.toReview,
     "reviewReason" -> metadata.reviewReason,
-    "declarable" -> metadata.declarable,
+    "declarable" -> declarable(now),
     "ukimsNumber" -> metadata.ukimsNumber,
     "nirmsNumber" -> metadata.nirmsNumber,
     "niphlNumber" -> metadata.niphlNumber,
@@ -79,6 +81,23 @@ final case class GoodsItemRecord(
     "createdDateTime" -> metadata.createdDateTime,
     "updatedDateTime" -> metadata.updatedDateTime
   ).fields.filterNot(_._2 == JsNull).toMap)
+
+  def declarable(now: Instant): Declarable =
+    if (metadata.active && !metadata.toReview && comcodeInEffect(now)) {
+      goodsItem.category match {
+        case Category.Standard =>
+          if (goodsItem.comcode.length >= 6) Declarable.ImmiReady else Declarable.NotReady
+        case Category.Controlled =>
+          if (goodsItem.comcode.length >= 8) Declarable.ImmiReady else Declarable.NotReady
+        case Category.Excluded =>
+          Declarable.ImmiNotReady
+      }
+    } else {
+      Declarable.NotReady
+    }
+
+  private def comcodeInEffect(now: Instant): Boolean =
+    !now.isBefore(goodsItem.comcodeEffectiveFromDate) && goodsItem.comcodeEffectiveToDate.forall(d => !now.isAfter(d))
 }
 
 object GoodsItemRecord {

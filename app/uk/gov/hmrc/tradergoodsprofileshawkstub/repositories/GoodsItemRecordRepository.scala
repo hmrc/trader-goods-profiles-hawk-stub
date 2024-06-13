@@ -83,7 +83,6 @@ class GoodsItemRecordRepository @Inject() (
         locked = false,
         toReview = false,
         reviewReason = None,
-        declarable = Declarable.NotReady,
         ukimsNumber = None,
         nirmsNumber = None,
         niphlNumber = None,
@@ -177,7 +176,6 @@ class GoodsItemRecordRepository @Inject() (
       request.locked.map(Updates.set("metadata.locked", _)),
       request.toReview.map(Updates.set("metadata.toReview", _)),
       request.reviewReason.map(Updates.set("metadata.reviewReason", _)),
-      request.declarable.map(Updates.set("metadata.declarable", _)),
       request.updatedDateTime.map(Updates.set("metadata.updatedDateTime", _))
     ).flatten
 

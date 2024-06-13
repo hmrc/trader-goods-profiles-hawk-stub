@@ -67,7 +67,7 @@ class GoodsItemTestSupportControllerSpec
 
       when(mockRepository.patch(any)).thenReturn(Future.successful(Some(Done)))
 
-      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None, None)
+      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None)
 
       val request = FakeRequest(routes.GoodsItemTestSupportController.patch())
         .withJsonBody(Json.toJson(patchRequest))
@@ -83,7 +83,7 @@ class GoodsItemTestSupportControllerSpec
 
       when(mockRepository.patch(any)).thenReturn(Future.successful(None))
 
-      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None, None)
+      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None)
 
       val request = FakeRequest(routes.GoodsItemTestSupportController.patch())
         .withJsonBody(Json.toJson(patchRequest))

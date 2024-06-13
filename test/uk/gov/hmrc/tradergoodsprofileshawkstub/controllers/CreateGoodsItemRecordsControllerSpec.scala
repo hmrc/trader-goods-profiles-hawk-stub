@@ -121,7 +121,7 @@ class CreateGoodsItemRecordsControllerSpec
 
       status(result) mustEqual CREATED
 
-      contentAsJson(result) mustEqual record.toCreateRecordResponse
+      contentAsJson(result) mustEqual record.toCreateRecordResponse(clock.instant())
       header("X-Correlation-ID", result).value mustEqual correlationId
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
@@ -604,7 +604,6 @@ class CreateGoodsItemRecordsControllerSpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      declarable = Declarable.NotReady,
       ukimsNumber = None,
       nirmsNumber = None,
       niphlNumber = None,

@@ -20,10 +20,10 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsNull, Json}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsResponse, Pagination}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{AccreditationStatus, Assessment, Category, Declarable, GoodsItem, GoodsItemMetadata, GoodsItemRecord}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 
-import java.time.{Clock, Instant, ZoneOffset}
 import java.time.temporal.ChronoUnit
+import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
 
 class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
@@ -63,7 +63,6 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
           locked = false,
           toReview = false,
           reviewReason = None,
-          declarable = Declarable.NotReady,
           ukimsNumber = None,
           nirmsNumber = None,
           niphlNumber = None,
@@ -85,7 +84,7 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
       )
 
       val expectedJson = Json.obj(
-        "goodsItemRecords" -> Json.arr(goodsItemRecord.toGetRecordResponse),
+        "goodsItemRecords" -> Json.arr(goodsItemRecord.toGetRecordResponse(clock.instant())),
         "pagination" -> Json.obj(
           "totalRecords" -> 2,
           "currentPage" -> 1,
@@ -95,7 +94,7 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
         )
       )
 
-      Json.toJsObject(response) mustEqual expectedJson
+      Json.toJsObject(response)(GetGoodsItemsResponse.writes(clock.instant())) mustEqual expectedJson
     }
   }
 }

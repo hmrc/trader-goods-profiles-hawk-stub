@@ -55,7 +55,7 @@ class CreateGoodsItemRecordsController @Inject()(
       _                <- validateEoriExists(body.eori)
     } yield {
       goodsItemRecordRepository.insert(body).map { goodsItemRecord =>
-        Created(goodsItemRecord.toCreateRecordResponse)
+        Created(goodsItemRecord.toCreateRecordResponse(clock.instant()))
       }.recover { case DuplicateEoriAndTraderRefException =>
         badRequest(
           errorCode = "400",

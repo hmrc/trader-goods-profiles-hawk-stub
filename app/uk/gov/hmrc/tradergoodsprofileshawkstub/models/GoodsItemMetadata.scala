@@ -28,7 +28,6 @@ final case class GoodsItemMetadata(
                                     locked: Boolean,
                                     toReview: Boolean,
                                     reviewReason: Option[String],
-                                    declarable: Declarable,
                                     ukimsNumber: Option[String],
                                     nirmsNumber: Option[String],
                                     niphlNumber: Option[String],
