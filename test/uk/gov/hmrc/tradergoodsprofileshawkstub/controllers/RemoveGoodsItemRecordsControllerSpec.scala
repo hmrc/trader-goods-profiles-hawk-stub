@@ -566,7 +566,6 @@ class RemoveGoodsItemRecordsControllerSpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      declarable = Declarable.NotReady,
       ukimsNumber = None,
       nirmsNumber = None,
       niphlNumber = None,

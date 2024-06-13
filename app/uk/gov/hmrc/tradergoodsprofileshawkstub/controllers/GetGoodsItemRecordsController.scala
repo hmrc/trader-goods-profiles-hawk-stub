@@ -63,7 +63,7 @@ class GetGoodsItemRecordsController @Inject()(
 
       goodsItemRecordRepository.get(eori, validatedParams.lastUpdatedDate, page, size).map { result =>
         val pagination = Pagination(totalRecords = result.totalCount.toInt, page, size)
-        Ok(Json.toJson(GetGoodsItemsResponse(result.records, pagination)))
+        Ok(Json.toJson(GetGoodsItemsResponse(result.records, pagination))(GetGoodsItemsResponse.writes(clock.instant())))
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
             "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
@@ -82,7 +82,7 @@ class GetGoodsItemRecordsController @Inject()(
     } yield {
       goodsItemRecordRepository.getById(eori, recordId).map { record =>
         val pagination = Pagination(totalRecords = record.size.toInt, page = 0, size = 1)
-        Ok(Json.toJson(GetGoodsItemsResponse(record.toSeq, pagination)))
+        Ok(Json.toJson(GetGoodsItemsResponse(record.toSeq, pagination))(GetGoodsItemsResponse.writes(clock.instant())))
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
             "X-Forwarded-Host" -> validatedHeaders.forwardedHost,

@@ -19,6 +19,8 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses
 import play.api.libs.json.{Json, OWrites}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.GoodsItemRecord
 
+import java.time.Instant
+
 final case class GetGoodsItemsResponse(
                                         goodsItemRecords: Seq[GoodsItemRecord],
                                         pagination: Pagination
@@ -26,10 +28,10 @@ final case class GetGoodsItemsResponse(
 
 object GetGoodsItemsResponse {
 
-  implicit lazy val writes: OWrites[GetGoodsItemsResponse] = OWrites { response =>
+  def writes(now: Instant): OWrites[GetGoodsItemsResponse] = OWrites { response =>
 
     Json.obj(
-      "goodsItemRecords" -> response.goodsItemRecords.map(_.toGetRecordResponse),
+      "goodsItemRecords" -> response.goodsItemRecords.map(_.toGetRecordResponse(now)),
       "pagination" -> response.pagination
     )
   }

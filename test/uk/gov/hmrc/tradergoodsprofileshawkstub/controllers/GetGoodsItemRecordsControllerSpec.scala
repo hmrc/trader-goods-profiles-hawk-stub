@@ -108,7 +108,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq(record),
         pagination = Pagination(totalRecords = 1, page = 0, size = 1)
-      ))
+      ))(GetGoodsItemsResponse.writes(clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -140,7 +140,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq.empty,
         pagination = Pagination(totalRecords = 0, page = 0, size = 1)
-      ))
+      ))(GetGoodsItemsResponse.writes(clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -461,7 +461,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq(record),
         pagination = Pagination(totalRecords = 7, page = 2, size = 3)
-      ))
+      ))(GetGoodsItemsResponse.writes(clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -497,7 +497,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq.empty,
         pagination = Pagination(totalRecords = 0, page = 2, size = 3)
-      ))
+      ))(GetGoodsItemsResponse.writes(clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -533,7 +533,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq.empty,
         pagination = Pagination(totalRecords = 0, page = 0, size = 3)
-      ))
+      ))(GetGoodsItemsResponse.writes(clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -568,7 +568,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq.empty,
         pagination = Pagination(totalRecords = 0, page = 2, size = 1337)
-      ))
+      ))(GetGoodsItemsResponse.writes(clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -604,7 +604,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq(record),
         pagination = Pagination(totalRecords = 7, page = 2, size = 3)
-      ))
+      ))(GetGoodsItemsResponse.writes(clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -1137,7 +1137,6 @@ class GetGoodsItemRecordsControllerSpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      declarable = Declarable.NotReady,
       ukimsNumber = None,
       nirmsNumber = None,
       niphlNumber = None,

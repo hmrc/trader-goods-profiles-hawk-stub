@@ -30,7 +30,6 @@ final case class PatchGoodsItemRequest(
                                         locked: Option[Boolean],
                                         toReview: Option[Boolean],
                                         reviewReason: Option[String],
-                                        declarable: Option[String],
                                         updatedDateTime: Option[Instant]
                                       )
 

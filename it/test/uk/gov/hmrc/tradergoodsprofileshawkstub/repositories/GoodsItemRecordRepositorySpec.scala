@@ -305,7 +305,6 @@ class GoodsItemRecordRepositorySpec
             locked = false,
             toReview = false,
             reviewReason = None,
-            declarable = Declarable.NotReady,
             ukimsNumber = None,
             nirmsNumber = None,
             niphlNumber = None,
@@ -382,7 +381,6 @@ class GoodsItemRecordRepositorySpec
             locked = false,
             toReview = false,
             reviewReason = None,
-            declarable = Declarable.NotReady,
             ukimsNumber = None,
             nirmsNumber = None,
             niphlNumber = None,
@@ -619,7 +617,6 @@ class GoodsItemRecordRepositorySpec
         locked = None,
         toReview = None,
         reviewReason = None,
-        declarable = None,
         updatedDateTime = None
       )
 
@@ -631,7 +628,6 @@ class GoodsItemRecordRepositorySpec
           locked = record.metadata.locked,
           toReview = record.metadata.toReview,
           reviewReason = record.metadata.reviewReason,
-          declarable = record.metadata.declarable,
           ukimsNumber = record.metadata.ukimsNumber,
           nirmsNumber = record.metadata.nirmsNumber,
           niphlNumber = record.metadata.niphlNumber,
@@ -662,7 +658,6 @@ class GoodsItemRecordRepositorySpec
         locked = None,
         toReview = None,
         reviewReason = None,
-        declarable = None,
         updatedDateTime = None
       )
 
@@ -674,7 +669,6 @@ class GoodsItemRecordRepositorySpec
           locked = record.metadata.locked,
           toReview = record.metadata.toReview,
           reviewReason = record.metadata.reviewReason,
-          declarable = record.metadata.declarable,
           ukimsNumber = record.metadata.ukimsNumber,
           nirmsNumber = record.metadata.nirmsNumber,
           niphlNumber = record.metadata.niphlNumber,
@@ -705,7 +699,6 @@ class GoodsItemRecordRepositorySpec
         locked = None,
         toReview = None,
         reviewReason = None,
-        declarable = None,
         updatedDateTime = None
       )
 
@@ -730,7 +723,6 @@ class GoodsItemRecordRepositorySpec
         locked = None,
         toReview = None,
         reviewReason = None,
-        declarable = None,
         updatedDateTime = None
       )
 
@@ -818,7 +810,6 @@ class GoodsItemRecordRepositorySpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      declarable = Declarable.NotReady,
       ukimsNumber = None,
       nirmsNumber = None,
       niphlNumber = None,
