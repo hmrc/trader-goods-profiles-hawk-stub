@@ -67,7 +67,7 @@ trait ValidationRules { this: BaseController =>
       .filter(_ == "application/json")
       .toRightNec("error: 003, message: Invalid Header")
 
-  protected def validateHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] = {
+  protected def validateWriteHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] = {
     (
       validateCorrelationId,
       validateForwardedHost,
