@@ -50,7 +50,7 @@ class UpdateGoodsItemRecordsController @Inject()(
 
     val result = for {
       _                <- EitherT.fromEither[Future](validateAuthorization)
-      _                <- EitherT.fromEither[Future](validateHeaders)
+      _                <- EitherT.fromEither[Future](validateWriteHeaders)
       body             <- EitherT.fromEither[Future](validateRequestBody[UpdateGoodsItemRecordRequest](updateRecordSchema))
       _                <- validateEoriExists(body.eori)
     } yield {

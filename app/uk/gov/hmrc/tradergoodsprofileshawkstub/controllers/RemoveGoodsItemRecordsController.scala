@@ -49,7 +49,7 @@ class RemoveGoodsItemRecordsController @Inject()(
 
     val result = for {
       _                <- EitherT.fromEither[Future](validateAuthorization)
-      _                <- EitherT.fromEither[Future](validateHeaders)
+      _                <- EitherT.fromEither[Future](validateWriteHeaders)
       body             <- EitherT.fromEither[Future](validateRequestBody[RemoveGoodsItemRecordRequest](removeRecordSchema))
       _                <- validateEoriExists(body.eori)
     } yield {

@@ -93,7 +93,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -125,7 +124,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -156,7 +154,6 @@ class GetGoodsItemRecordsControllerSpec
       val request = FakeRequest(routes.GetGoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
         .withHeaders(
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -193,7 +190,6 @@ class GetGoodsItemRecordsControllerSpec
       val request = FakeRequest(routes.GetGoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -231,7 +227,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Authorization" -> "some-token"
         )
@@ -268,7 +263,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> "invalid",
           "Authorization" -> "some-token"
@@ -291,79 +285,6 @@ class GetGoodsItemRecordsControllerSpec
         )
       )
 
-      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
-      header("X-Correlation-ID", result).value mustEqual correlationId
-      header("X-Forwarded-Host", result).value mustEqual forwardedHost
-      header("Content-Type", result).value mustEqual "application/json"
-
-      verify(mockUuidService, never).generate()
-      verify(mockGoodsItemRepository, never).getById(any, any)
-    }
-
-    "must not update a record and return an error when there is no content-type header" in {
-
-      val request = FakeRequest(routes.GetGoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
-        .withHeaders(
-          "X-Correlation-ID" -> correlationId,
-          "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
-        )
-
-      when(mockUuidService.generate()).thenReturn(correlationId)
-
-      val expectedResponse = ErrorResponse(
-        correlationId = correlationId,
-        timestamp = clock.instant(),
-        errorCode = "400",
-        errorMessage = "Bad Request",
-        source = "BACKEND",
-        detail = Seq(
-          "error: 003, message: Invalid Header"
-        )
-      )
-
-      val result = route(app, request).value
-
-      status(result) mustEqual BAD_REQUEST
-      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
-      header("X-Correlation-ID", result).value mustEqual correlationId
-      header("X-Forwarded-Host", result).value mustEqual forwardedHost
-      header("Content-Type", result).value mustEqual "application/json"
-
-      verify(mockUuidService, never).generate()
-      verify(mockGoodsItemRepository, never).getById(any, any)
-    }
-
-    "must not update a record and return an error when there is an invalid content-type header" in {
-
-      val request = FakeRequest(routes.GetGoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
-        .withHeaders(
-          "X-Correlation-ID" -> correlationId,
-          "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token",
-          "Content-Type" -> "text/xml"
-        )
-
-      when(mockUuidService.generate()).thenReturn(correlationId)
-
-      val expectedResponse = ErrorResponse(
-        correlationId = correlationId,
-        timestamp = clock.instant(),
-        errorCode = "400",
-        errorMessage = "Bad Request",
-        source = "BACKEND",
-        detail = Seq(
-          "error: 003, message: Invalid Header"
-        )
-      )
-
-      val result = route(app, request).value
-
-      status(result) mustEqual BAD_REQUEST
       contentAsJson(result) mustEqual Json.toJson(expectedResponse)
       header("X-Correlation-ID", result).value mustEqual correlationId
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
@@ -442,7 +363,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -478,7 +398,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -514,7 +433,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -549,7 +467,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -585,7 +502,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -621,7 +537,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -659,7 +574,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -697,7 +611,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -735,7 +648,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -773,7 +685,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -811,7 +722,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -848,7 +758,6 @@ class GetGoodsItemRecordsControllerSpec
       val request = FakeRequest(url(record.goodsItem.eori))
         .withHeaders(
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -885,7 +794,6 @@ class GetGoodsItemRecordsControllerSpec
       val request = FakeRequest(url(record.goodsItem.eori))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
@@ -923,7 +831,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Authorization" -> "some-token"
         )
@@ -960,7 +867,6 @@ class GetGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
           "Accept" -> "application/json",
           "Date" -> "invalid",
           "Authorization" -> "some-token"
@@ -983,79 +889,6 @@ class GetGoodsItemRecordsControllerSpec
         )
       )
 
-      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
-      header("X-Correlation-ID", result).value mustEqual correlationId
-      header("X-Forwarded-Host", result).value mustEqual forwardedHost
-      header("Content-Type", result).value mustEqual "application/json"
-
-      verify(mockUuidService, never).generate()
-      verify(mockGoodsItemRepository, never).get(any, any, any, any)
-    }
-
-    "must not update a record and return an error when there is no content-type header" in {
-
-      val request = FakeRequest(url(record.goodsItem.eori))
-        .withHeaders(
-          "X-Correlation-ID" -> correlationId,
-          "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
-        )
-
-      when(mockUuidService.generate()).thenReturn(correlationId)
-
-      val expectedResponse = ErrorResponse(
-        correlationId = correlationId,
-        timestamp = clock.instant(),
-        errorCode = "400",
-        errorMessage = "Bad Request",
-        source = "BACKEND",
-        detail = Seq(
-          "error: 003, message: Invalid Header"
-        )
-      )
-
-      val result = route(app, request).value
-
-      status(result) mustEqual BAD_REQUEST
-      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
-      header("X-Correlation-ID", result).value mustEqual correlationId
-      header("X-Forwarded-Host", result).value mustEqual forwardedHost
-      header("Content-Type", result).value mustEqual "application/json"
-
-      verify(mockUuidService, never).generate()
-      verify(mockGoodsItemRepository, never).get(any, any, any, any)
-    }
-
-    "must not update a record and return an error when there is an invalid content-type header" in {
-
-      val request = FakeRequest(url(record.goodsItem.eori))
-        .withHeaders(
-          "X-Correlation-ID" -> correlationId,
-          "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token",
-          "Content-Type" -> "text/xml"
-        )
-
-      when(mockUuidService.generate()).thenReturn(correlationId)
-
-      val expectedResponse = ErrorResponse(
-        correlationId = correlationId,
-        timestamp = clock.instant(),
-        errorCode = "400",
-        errorMessage = "Bad Request",
-        source = "BACKEND",
-        detail = Seq(
-          "error: 003, message: Invalid Header"
-        )
-      )
-
-      val result = route(app, request).value
-
-      status(result) mustEqual BAD_REQUEST
       contentAsJson(result) mustEqual Json.toJson(expectedResponse)
       header("X-Correlation-ID", result).value mustEqual correlationId
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
