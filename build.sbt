@@ -4,6 +4,7 @@ ThisBuild / majorVersion := 0
 ThisBuild / scalaVersion := "2.13.12"
 
 lazy val microservice = Project("trader-goods-profiles-hawk-stub", file("."))
+  .disablePlugins(JUnitXmlReportPlugin)
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
   .settings(
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
