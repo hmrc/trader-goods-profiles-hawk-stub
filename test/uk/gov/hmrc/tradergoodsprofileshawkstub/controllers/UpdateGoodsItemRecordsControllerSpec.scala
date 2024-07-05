@@ -103,6 +103,15 @@ class UpdateGoodsItemRecordsControllerSpec
       comcodeEffectiveToDate = None
     )
 
+    val profile = TraderProfile(
+      eori = requestBody.eori,
+      actorId = requestBody.actorId,
+      nirmsNumber = None,
+      niphlNumber = None,
+      ukimsNumber = None,
+      lastUpdated = clock.instant()
+    )
+
     "must update a record and return the relevant response when given a valid request" in {
 
       val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
@@ -115,20 +124,20 @@ class UpdateGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.update(any)).thenReturn(Future.successful(Some(record)))
 
       val result = route(app, request).value
 
       status(result) mustEqual OK
 
-      contentAsJson(result) mustEqual record.toCreateRecordResponse(clock.instant())
+      contentAsJson(result) mustEqual record.toCreateRecordResponse(profile, clock.instant())
       header("X-Correlation-ID", result).value mustEqual correlationId
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository).update(requestBody)
     }
 
@@ -144,7 +153,7 @@ class UpdateGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.update(any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
@@ -168,7 +177,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository).update(requestBody)
     }
 
@@ -184,7 +193,7 @@ class UpdateGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(false))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
 
@@ -207,7 +216,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -223,7 +232,7 @@ class UpdateGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
 
       val result = route(app, request).value
@@ -247,7 +256,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository).update(requestBody)
     }
 
@@ -263,7 +272,7 @@ class UpdateGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(RecordInactiveException))
 
       val result = route(app, request).value
@@ -287,7 +296,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository).update(requestBody)
     }
 
@@ -303,7 +312,7 @@ class UpdateGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(RecordLockedException))
 
       val result = route(app, request).value
@@ -327,7 +336,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository).update(requestBody)
     }
 
@@ -364,7 +373,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, times(1)).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -401,7 +410,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -438,7 +447,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -476,7 +485,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -513,7 +522,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -551,7 +560,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -589,7 +598,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -633,7 +642,7 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -655,7 +664,7 @@ class UpdateGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
 
@@ -678,7 +687,7 @@ class UpdateGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(any)
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).update(any)
     }
   }
@@ -717,9 +726,6 @@ class UpdateGoodsItemRecordsControllerSpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      ukimsNumber = None,
-      nirmsNumber = None,
-      niphlNumber = None,
       srcSystemName = "MDTP",
       updatedDateTime = clock.instant(),
       createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)

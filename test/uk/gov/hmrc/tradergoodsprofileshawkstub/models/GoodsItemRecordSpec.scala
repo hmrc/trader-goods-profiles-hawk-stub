@@ -69,13 +69,22 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             locked = false,
             toReview = true,
             reviewReason = Some("reviewReason"),
-            ukimsNumber = Some("ukims"),
-            nirmsNumber = Some("nirms"),
-            niphlNumber = Some("niphl"),
+            // ukimsNumber = Some("ukims"),
+            // nirmsNumber = Some("nirms"),
+            // niphlNumber = Some("niphl"),
             srcSystemName = "MDTP",
             updatedDateTime = clock.instant(),
             createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
           )
+        )
+
+        val profile = TraderProfile(
+          eori = "eori",
+          actorId = "actorId",
+          ukimsNumber = Some("ukims"),
+          nirmsNumber = Some("nirms"),
+          niphlNumber = Some("niphl"),
+          lastUpdated = clock.instant()
         )
 
         val expectedJson = Json.obj(
@@ -98,14 +107,14 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
           "toReview" -> fullGoodsItemRecord.metadata.toReview,
           "reviewReason" -> fullGoodsItemRecord.metadata.reviewReason,
           "declarable" -> fullGoodsItemRecord.declarable(clock.instant()),
-          "ukimsNumber" -> fullGoodsItemRecord.metadata.ukimsNumber,
-          "nirmsNumber" -> fullGoodsItemRecord.metadata.nirmsNumber,
-          "niphlNumber" -> fullGoodsItemRecord.metadata.niphlNumber,
+          "ukimsNumber" -> profile.ukimsNumber,
+          "nirmsNumber" -> profile.nirmsNumber,
+          "niphlNumber" -> profile.niphlNumber,
           "createdDateTime" -> fullGoodsItemRecord.metadata.createdDateTime,
           "updatedDateTime" -> fullGoodsItemRecord.metadata.updatedDateTime
         )
 
-        fullGoodsItemRecord.toCreateRecordResponse(clock.instant()) mustEqual expectedJson
+        fullGoodsItemRecord.toCreateRecordResponse(profile, clock.instant()) mustEqual expectedJson
       }
 
       "when no optional fields are included" in {
@@ -139,13 +148,19 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             locked = false,
             toReview = false,
             reviewReason = None,
-            ukimsNumber = None,
-            nirmsNumber = None,
-            niphlNumber = None,
             srcSystemName = "MDTP",
             updatedDateTime = clock.instant(),
             createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
           )
+        )
+
+        val profile = TraderProfile(
+          eori = "eori",
+          actorId = "actorId",
+          ukimsNumber = None,
+          nirmsNumber = None,
+          niphlNumber = None,
+          lastUpdated = clock.instant()
         )
 
         val expectedJson = Json.obj(
@@ -168,7 +183,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
           "updatedDateTime" -> minimumGoodsItemRecord.metadata.updatedDateTime
         )
 
-        minimumGoodsItemRecord.toCreateRecordResponse(clock.instant()) mustEqual expectedJson
+        minimumGoodsItemRecord.toCreateRecordResponse(profile, clock.instant()) mustEqual expectedJson
       }
     }
   }
@@ -213,13 +228,19 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             locked = false,
             toReview = true,
             reviewReason = Some("reviewReason"),
-            ukimsNumber = Some("ukims"),
-            nirmsNumber = Some("nirms"),
-            niphlNumber = Some("niphl"),
             srcSystemName = "MDTP",
             updatedDateTime = clock.instant(),
             createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
           )
+        )
+
+        val profile = TraderProfile(
+          eori = "eori",
+          actorId = "actorId",
+          ukimsNumber = Some("ukims"),
+          nirmsNumber = Some("nirms"),
+          niphlNumber = Some("niphl"),
+          lastUpdated = clock.instant()
         )
 
         val expectedJson = Json.obj(
@@ -244,14 +265,14 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
           "declarable" -> fullGoodsItemRecord.declarable(clock.instant()),
           "locked" -> fullGoodsItemRecord.metadata.locked,
           "srcSystemName" -> fullGoodsItemRecord.metadata.srcSystemName,
-          "ukimsNumber" -> fullGoodsItemRecord.metadata.ukimsNumber,
-          "nirmsNumber" -> fullGoodsItemRecord.metadata.nirmsNumber,
-          "niphlNumber" -> fullGoodsItemRecord.metadata.niphlNumber,
+          "ukimsNumber" -> profile.ukimsNumber,
+          "nirmsNumber" -> profile.nirmsNumber,
+          "niphlNumber" -> profile.niphlNumber,
           "createdDateTime" -> fullGoodsItemRecord.metadata.createdDateTime,
           "updatedDateTime" -> fullGoodsItemRecord.metadata.updatedDateTime
         )
 
-        fullGoodsItemRecord.toGetRecordResponse(clock.instant()) mustEqual expectedJson
+        fullGoodsItemRecord.toGetRecordResponse(profile, clock.instant()) mustEqual expectedJson
       }
 
       "when no optional fields are included" in {
@@ -285,13 +306,19 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             locked = false,
             toReview = false,
             reviewReason = None,
-            ukimsNumber = None,
-            nirmsNumber = None,
-            niphlNumber = None,
             srcSystemName = "MDTP",
             updatedDateTime = clock.instant(),
             createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
           )
+        )
+
+        val profile = TraderProfile(
+          eori = "eori",
+          actorId = "actorId",
+          ukimsNumber = None,
+          nirmsNumber = None,
+          niphlNumber = None,
+          lastUpdated = clock.instant()
         )
 
         val expectedJson = Json.obj(
@@ -316,12 +343,12 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
           "updatedDateTime" -> minimumGoodsItemRecord.metadata.updatedDateTime
         )
 
-        minimumGoodsItemRecord.toGetRecordResponse(clock.instant()) mustEqual expectedJson
+        minimumGoodsItemRecord.toGetRecordResponse(profile, clock.instant()) mustEqual expectedJson
       }
     }
   }
 
-  "withUpdatedDeclarable" - {
+  "declarable" - {
 
     val record = GoodsItemRecord(
       recordId = UUID.randomUUID().toString,
@@ -357,9 +384,6 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
         locked = false,
         toReview = true,
         reviewReason = Some("reviewReason"),
-        ukimsNumber = Some("ukims"),
-        nirmsNumber = Some("nirms"),
-        niphlNumber = Some("niphl"),
         srcSystemName = "MDTP",
         updatedDateTime = clock.instant(),
         createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)

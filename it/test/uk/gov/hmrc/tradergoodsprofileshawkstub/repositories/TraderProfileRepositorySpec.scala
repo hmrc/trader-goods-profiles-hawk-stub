@@ -87,17 +87,17 @@ class TraderProfileRepositorySpec
     }
   }
 
-  "exists" - {
+  "get" - {
 
     val profile = TraderProfile(eori = "eori", actorId = "actorId", ukimsNumber = Some("ukims"), nirmsNumber = Some("nirms"), niphlNumber = Some("niphl"), lastUpdated = clock.instant())
 
-    "must be true when a profile exists for the given eori" in {
+    "must return the profile for a given eori when it exists" in {
       repository.collection.insertOne(profile).toFuture().futureValue
-      repository.exists("eori").futureValue mustBe true
+      repository.get("eori").futureValue.value mustBe profile
     }
 
-    "must be false when a profile does not exist for the given eori" in {
-      repository.exists("eori").futureValue mustBe false
+    "must return None when there is no profile for the given eori" in {
+      repository.get("eori").futureValue mustBe None
     }
   }
 }

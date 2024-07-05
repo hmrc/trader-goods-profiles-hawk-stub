@@ -83,9 +83,6 @@ class GoodsItemRecordRepository @Inject() (
         locked = false,
         toReview = false,
         reviewReason = None,
-        ukimsNumber = None,
-        nirmsNumber = None,
-        niphlNumber = None,
         srcSystemName = "MDTP",
         createdDateTime = clock.instant(),
         updatedDateTime = clock.instant()

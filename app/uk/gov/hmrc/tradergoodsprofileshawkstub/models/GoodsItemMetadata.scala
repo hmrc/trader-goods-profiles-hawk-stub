@@ -28,9 +28,6 @@ final case class GoodsItemMetadata(
                                     locked: Boolean,
                                     toReview: Boolean,
                                     reviewReason: Option[String],
-                                    ukimsNumber: Option[String],
-                                    nirmsNumber: Option[String],
-                                    niphlNumber: Option[String],
                                     srcSystemName: String,
                                     createdDateTime: Instant,
                                     updatedDateTime: Instant

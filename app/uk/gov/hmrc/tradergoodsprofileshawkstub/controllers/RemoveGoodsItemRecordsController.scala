@@ -51,7 +51,7 @@ class RemoveGoodsItemRecordsController @Inject()(
       _                <- EitherT.fromEither[Future](validateAuthorization)
       _                <- EitherT.fromEither[Future](validateWriteHeaders)
       body             <- EitherT.fromEither[Future](validateRequestBody[RemoveGoodsItemRecordRequest](removeRecordSchema))
-      _                <- validateEoriExists(body.eori)
+      _                <- getTraderProfile(body.eori)
     } yield {
       goodsItemRecordRepository.deactivate(body).map {
         _.map { _ =>

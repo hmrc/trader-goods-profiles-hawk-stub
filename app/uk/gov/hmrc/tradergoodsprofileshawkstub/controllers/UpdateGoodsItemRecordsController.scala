@@ -52,11 +52,11 @@ class UpdateGoodsItemRecordsController @Inject()(
       _                <- EitherT.fromEither[Future](validateAuthorization)
       _                <- EitherT.fromEither[Future](validateWriteHeaders)
       body             <- EitherT.fromEither[Future](validateRequestBody[UpdateGoodsItemRecordRequest](updateRecordSchema))
-      _                <- validateEoriExists(body.eori)
+      profile          <- getTraderProfile(body.eori)
     } yield {
       goodsItemRecordRepository.update(body).map {
         _.map { goodsItemRecord =>
-          Ok(goodsItemRecord.toCreateRecordResponse(clock.instant()))
+          Ok(goodsItemRecord.toCreateRecordResponse(profile, clock.instant()))
         }.getOrElse {
           badRequest(
             errorCode = "400",

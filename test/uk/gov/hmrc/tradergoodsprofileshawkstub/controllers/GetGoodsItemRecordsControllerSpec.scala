@@ -87,6 +87,15 @@ class GetGoodsItemRecordsControllerSpec
     val forwardedHost = "forwarded-for"
     val record = generateRecord
 
+    val profile = TraderProfile(
+      eori = record.goodsItem.eori,
+      actorId = record.goodsItem.actorId,
+      nirmsNumber = None,
+      niphlNumber = None,
+      ukimsNumber = None,
+      lastUpdated = clock.instant()
+    )
+
     "must return a response with a single element when a result is returned" in {
 
       val request = FakeRequest(routes.GetGoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
@@ -98,6 +107,7 @@ class GetGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.getById(any, any)).thenReturn(Future.successful(Some(record)))
 
       val result = route(app, request).value
@@ -107,7 +117,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq(record),
         pagination = Pagination(totalRecords = 1, page = 0, size = 1)
-      ))(GetGoodsItemsResponse.writes(clock.instant()))
+      ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -115,6 +125,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository).getById(record.goodsItem.eori, record.recordId)
     }
 
@@ -129,6 +140,7 @@ class GetGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.getById(any, any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
@@ -138,7 +150,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq.empty,
         pagination = Pagination(totalRecords = 0, page = 0, size = 1)
-      ))(GetGoodsItemsResponse.writes(clock.instant()))
+      ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -146,7 +158,46 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository).getById(record.goodsItem.eori, record.recordId)
+    }
+
+    "must return an error when there is no profile for the eori" in {
+
+      val request = FakeRequest(routes.GetGoodsItemRecordsController.getRecord(profile.eori, record.recordId))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(None))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 007, message: Invalid Request Parameter"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(profile.eori)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must return an error when there is no correlation-id header" in {
@@ -182,6 +233,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, times(1)).generate()
+      verify(mockTraderProfilesRepository, never).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
@@ -218,6 +270,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
@@ -254,6 +307,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
@@ -291,6 +345,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
@@ -311,6 +366,7 @@ class GetGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository, never).getById(any, any)
     }
 
@@ -332,6 +388,7 @@ class GetGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository, never).getById(any, any)
     }
   }
@@ -343,6 +400,15 @@ class GetGoodsItemRecordsControllerSpec
     val record = generateRecord
     val lastUpdatedTime = LocalDateTime.of(2024, 3, 2, 12, 30, 45).toInstant(ZoneOffset.UTC)
     val lastUpdatedTimeString = "2024-03-02T12:30:45Z"
+
+    val profile = TraderProfile(
+      eori = record.goodsItem.eori,
+      actorId = record.goodsItem.actorId,
+      nirmsNumber = None,
+      niphlNumber = None,
+      ukimsNumber = None,
+      lastUpdated = clock.instant()
+    )
 
     def url(eori: String, page: Option[String] = None, size: Option[String] = None, lastUpdatedDate: Option[String] = None): Call = {
 
@@ -372,6 +438,7 @@ class GetGoodsItemRecordsControllerSpec
         totalCount = 7, records = Seq(record)
       )
 
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
@@ -381,7 +448,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq(record),
         pagination = Pagination(totalRecords = 7, page = 2, size = 3)
-      ))(GetGoodsItemsResponse.writes(clock.instant()))
+      ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -389,6 +456,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 3)
     }
 
@@ -407,6 +475,7 @@ class GetGoodsItemRecordsControllerSpec
         totalCount = 0, records = Seq.empty
       )
 
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
@@ -416,7 +485,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq.empty,
         pagination = Pagination(totalRecords = 0, page = 2, size = 3)
-      ))(GetGoodsItemsResponse.writes(clock.instant()))
+      ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -424,6 +493,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 3)
     }
 
@@ -442,6 +512,7 @@ class GetGoodsItemRecordsControllerSpec
         totalCount = 0, records = Seq.empty
       )
 
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
@@ -451,7 +522,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq.empty,
         pagination = Pagination(totalRecords = 0, page = 0, size = 3)
-      ))(GetGoodsItemsResponse.writes(clock.instant()))
+      ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -459,6 +530,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 0, size = 3)
     }
 
@@ -476,6 +548,7 @@ class GetGoodsItemRecordsControllerSpec
         totalCount = 0, records = Seq.empty
       )
 
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
@@ -485,7 +558,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq.empty,
         pagination = Pagination(totalRecords = 0, page = 2, size = 1337)
-      ))(GetGoodsItemsResponse.writes(clock.instant()))
+      ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -493,6 +566,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 1337)
     }
 
@@ -511,6 +585,7 @@ class GetGoodsItemRecordsControllerSpec
         totalCount = 7, records = Seq(record)
       )
 
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.get(any, any, any, any)).thenReturn(Future.successful(goodsItemRecordsResult))
 
       val result = route(app, request).value
@@ -520,7 +595,7 @@ class GetGoodsItemRecordsControllerSpec
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq(record),
         pagination = Pagination(totalRecords = 7, page = 2, size = 3)
-      ))(GetGoodsItemsResponse.writes(clock.instant()))
+      ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
       header("X-Correlation-ID", result).value mustEqual correlationId
@@ -528,7 +603,46 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(record.goodsItem.eori)
       verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = None, page = 2, size = 3)
+    }
+
+    "must return an error when there is no profile for the eori" in {
+
+      val request = FakeRequest(url(record.goodsItem.eori, page = Some("2"), size = Some("3"), lastUpdatedDate = Some(lastUpdatedTimeString)))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(None))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 007, message: Invalid Request Parameter"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(profile.eori)
+      verify(mockGoodsItemRepository, never).update(any)
     }
 
     "must return an error when page is invalid" in {
@@ -565,6 +679,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -602,6 +717,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -639,6 +755,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -676,6 +793,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -713,6 +831,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -750,6 +869,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -786,6 +906,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, times(1)).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -822,6 +943,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -858,6 +980,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -895,6 +1018,7 @@ class GetGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -913,6 +1037,7 @@ class GetGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
 
@@ -932,6 +1057,7 @@ class GetGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).get(any, any, any, any)
     }
   }
@@ -970,9 +1096,6 @@ class GetGoodsItemRecordsControllerSpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      ukimsNumber = None,
-      nirmsNumber = None,
-      niphlNumber = None,
       srcSystemName = "MDTP",
       updatedDateTime = clock.instant(),
       createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)

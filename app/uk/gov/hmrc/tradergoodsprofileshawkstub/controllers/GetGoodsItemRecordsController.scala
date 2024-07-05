@@ -34,6 +34,7 @@ import java.time.{Clock, Instant}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+import cats.data.EitherT
 
 @Singleton
 class GetGoodsItemRecordsController @Inject()(
@@ -54,9 +55,10 @@ class GetGoodsItemRecordsController @Inject()(
 
   def getRecords(eori: String): Action[AnyContent] = (Action andThen headersFilter).async { implicit request =>
     val result = for {
-      _                <- validateAuthorization
-      validatedHeaders <- validateHeaders
-      validatedParams  <- validateParameters
+      _                <- EitherT.fromEither[Future](validateAuthorization)
+      validatedHeaders <- EitherT.fromEither[Future](validateHeaders)
+      validatedParams  <- EitherT.fromEither[Future](validateParameters)
+      profile          <- getTraderProfile(eori)
     } yield {
 
       val page = validatedParams.page.getOrElse(0)
@@ -64,7 +66,7 @@ class GetGoodsItemRecordsController @Inject()(
 
       goodsItemRecordRepository.get(eori, validatedParams.lastUpdatedDate, page, size).map { result =>
         val pagination = Pagination(totalRecords = result.totalCount.toInt, page, size)
-        Ok(Json.toJson(GetGoodsItemsResponse(result.records, pagination))(GetGoodsItemsResponse.writes(clock.instant())))
+        Ok(Json.toJson(GetGoodsItemsResponse(result.records, pagination))(GetGoodsItemsResponse.writes(profile, clock.instant())))
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
             "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
@@ -73,17 +75,18 @@ class GetGoodsItemRecordsController @Inject()(
       }
     }
 
-    result.leftMap(Future.successful).merge
+    result.leftMap(Future.successful).merge.flatten
   }
 
   def getRecord(eori: String, recordId: String): Action[AnyContent] = (Action andThen headersFilter).async { implicit request =>
     val result = for {
-      _                <- validateAuthorization
-      validatedHeaders <- validateHeaders
+      _                <- EitherT.fromEither[Future](validateAuthorization)
+      validatedHeaders <- EitherT.fromEither[Future](validateHeaders)
+      profile          <- getTraderProfile(eori)
     } yield {
       goodsItemRecordRepository.getById(eori, recordId).map { record =>
         val pagination = Pagination(totalRecords = record.size.toInt, page = 0, size = 1)
-        Ok(Json.toJson(GetGoodsItemsResponse(record.toSeq, pagination))(GetGoodsItemsResponse.writes(clock.instant())))
+        Ok(Json.toJson(GetGoodsItemsResponse(record.toSeq, pagination))(GetGoodsItemsResponse.writes(profile, clock.instant())))
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
             "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
@@ -92,7 +95,7 @@ class GetGoodsItemRecordsController @Inject()(
       }
     }
 
-    result.leftMap(Future.successful).merge
+    result.leftMap(Future.successful).merge.flatten
   }
 
   private def validateHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] = {

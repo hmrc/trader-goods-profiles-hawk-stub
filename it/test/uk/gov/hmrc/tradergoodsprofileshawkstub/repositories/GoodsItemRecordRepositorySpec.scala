@@ -323,9 +323,6 @@ class GoodsItemRecordRepositorySpec
             locked = false,
             toReview = false,
             reviewReason = None,
-            ukimsNumber = None,
-            nirmsNumber = None,
-            niphlNumber = None,
             srcSystemName = "MDTP",
             createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS),
             updatedDateTime = clock.instant()
@@ -399,9 +396,6 @@ class GoodsItemRecordRepositorySpec
             locked = false,
             toReview = false,
             reviewReason = None,
-            ukimsNumber = None,
-            nirmsNumber = None,
-            niphlNumber = None,
             srcSystemName = "MDTP",
             updatedDateTime = clock.instant(),
             createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
@@ -646,9 +640,6 @@ class GoodsItemRecordRepositorySpec
           locked = record.metadata.locked,
           toReview = record.metadata.toReview,
           reviewReason = record.metadata.reviewReason,
-          ukimsNumber = record.metadata.ukimsNumber,
-          nirmsNumber = record.metadata.nirmsNumber,
-          niphlNumber = record.metadata.niphlNumber,
           srcSystemName = record.metadata.srcSystemName,
           createdDateTime = record.metadata.createdDateTime,
           updatedDateTime = record.metadata.updatedDateTime
@@ -687,9 +678,6 @@ class GoodsItemRecordRepositorySpec
           locked = record.metadata.locked,
           toReview = record.metadata.toReview,
           reviewReason = record.metadata.reviewReason,
-          ukimsNumber = record.metadata.ukimsNumber,
-          nirmsNumber = record.metadata.nirmsNumber,
-          niphlNumber = record.metadata.niphlNumber,
           srcSystemName = record.metadata.srcSystemName,
           createdDateTime = record.metadata.createdDateTime,
           updatedDateTime = record.metadata.updatedDateTime
@@ -828,9 +816,6 @@ class GoodsItemRecordRepositorySpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      ukimsNumber = None,
-      nirmsNumber = None,
-      niphlNumber = None,
       srcSystemName = "MDTP",
       updatedDateTime = clock.instant(),
       createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
