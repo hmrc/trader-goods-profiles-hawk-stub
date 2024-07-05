@@ -129,7 +129,9 @@ class GoodsItemRecordRepository @Inject() (
           "records" -> 1
         ).toDocument()
       )
-    )).head()
+    )).headOption().map {
+      _.getOrElse(GetGoodsItemRecordsResult(0, Seq.empty))
+    }
   }
 
   def update(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
