@@ -63,13 +63,19 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
           locked = false,
           toReview = false,
           reviewReason = None,
-          ukimsNumber = None,
-          nirmsNumber = None,
-          niphlNumber = None,
           srcSystemName = "MDTP",
           updatedDateTime = clock.instant(),
           createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
         )
+      )
+
+      val profile = TraderProfile(
+        eori = "eori",
+        actorId = "actor",
+        ukimsNumber = None,
+        nirmsNumber = None,
+        niphlNumber = None,
+        lastUpdated = clock.instant()
       )
 
       val response = GetGoodsItemsResponse(
@@ -84,7 +90,7 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
       )
 
       val expectedJson = Json.obj(
-        "goodsItemRecords" -> Json.arr(goodsItemRecord.toGetRecordResponse(clock.instant())),
+        "goodsItemRecords" -> Json.arr(goodsItemRecord.toGetRecordResponse(profile, clock.instant())),
         "pagination" -> Json.obj(
           "totalRecords" -> 2,
           "currentPage" -> 1,
@@ -94,7 +100,7 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
         )
       )
 
-      Json.toJsObject(response)(GetGoodsItemsResponse.writes(clock.instant())) mustEqual expectedJson
+      Json.toJsObject(response)(GetGoodsItemsResponse.writes(profile, clock.instant())) mustEqual expectedJson
     }
   }
 }

@@ -61,9 +61,9 @@ class TraderProfileRepository @Inject() (
     ).toFuture().as(Done)
   }
 
-  def exists(eori: String): Future[Boolean] =
+  def get(eori: String): Future[Option[TraderProfile]] =
     collection.find(Filters.eq("eori", eori))
-      .headOption().map(_.isDefined)
+      .headOption()
 }
 
 object TraderProfileRepository {

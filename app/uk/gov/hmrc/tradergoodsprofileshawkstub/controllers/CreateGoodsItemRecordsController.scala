@@ -52,10 +52,10 @@ class CreateGoodsItemRecordsController @Inject()(
       _                <- EitherT.fromEither[Future](validateAuthorization)
       _                <- EitherT.fromEither[Future](validateWriteHeaders)
       body             <- EitherT.fromEither[Future](validateRequestBody[CreateGoodsItemRecordRequest](createRecordSchema))
-      _                <- validateEoriExists(body.eori)
+      profile          <- getTraderProfile(body.eori)
     } yield {
       goodsItemRecordRepository.insert(body).map { goodsItemRecord =>
-        Created(goodsItemRecord.toCreateRecordResponse(clock.instant()))
+        Created(goodsItemRecord.toCreateRecordResponse(profile, clock.instant()))
       }.recover { case DuplicateEoriAndTraderRefException =>
         badRequest(
           errorCode = "400",

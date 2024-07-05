@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 
-import cats.data.{EitherNec, EitherT}
+import cats.data._
 import cats.syntax.all._
 import org.apache.pekko.Done
 import org.everit.json.schema.Schema
@@ -32,6 +32,8 @@ import java.time.Clock
 import java.time.format.DateTimeFormatter
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
+import cats.data.OptionT
 
 trait ValidationRules { this: BaseController =>
 
@@ -118,23 +120,18 @@ trait ValidationRules { this: BaseController =>
     }
   }
 
-  protected def validateEoriExists(eori: String)(implicit request: Request[_]): EitherT[Future, Result, Done] = {
-    val result = traderProfilesRepository.exists(eori).map { exists =>
-      if (exists) {
-        Done.asRight[Result]
-      } else {
-        badRequest(
-          errorCode = "400",
-          errorMessage = "Bad Request",
-          source = "BACKEND",
-          detail = Seq(
-            "error: 007, message: Invalid Request Parameter"
-          )
-        ).asLeft[Done]
-      }
-    }
-
-    EitherT(result)
+  protected def getTraderProfile(eori: String)(implicit request: Request[_]): EitherT[Future, Result, TraderProfile] = {
+    EitherT.fromOptionF(
+      traderProfilesRepository.get(eori),
+      badRequest(
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 007, message: Invalid Request Parameter"
+        )
+      )
+    )
   }
 
   protected def badRequest(errorCode: String, errorMessage: String, source: String, detail: Seq[String])(implicit request: Request[_]): Result = {

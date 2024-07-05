@@ -92,6 +92,15 @@ class RemoveGoodsItemRecordsControllerSpec
       actorId = "actorId123456789"
     )
 
+    val profile = TraderProfile(
+      eori = requestBody.eori,
+      actorId = requestBody.actorId,
+      nirmsNumber = None,
+      niphlNumber = None,
+      ukimsNumber = None,
+      lastUpdated = clock.instant()
+    )
+
     "must deactivate the given record and return OK when the record exists" in {
 
       val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
@@ -103,7 +112,7 @@ class RemoveGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.deactivate(any)).thenReturn(Future.successful(Some(record)))
 
       val result = route(app, request).value
@@ -115,7 +124,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository).deactivate(requestBody)
     }
 
@@ -130,7 +139,7 @@ class RemoveGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(true))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
       when(mockGoodsItemRepository.deactivate(any)).thenReturn(Future.successful(None))
 
       val expectedResponse = ErrorResponse(
@@ -154,7 +163,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository).deactivate(any)
     }
 
@@ -169,7 +178,7 @@ class RemoveGoodsItemRecordsControllerSpec
           "Authorization" -> "some-token"
         )
 
-      when(mockTraderProfilesRepository.exists(any)).thenReturn(Future.successful(false))
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(None))
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -192,7 +201,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -229,7 +238,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, times(1)).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -266,7 +275,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -303,7 +312,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -325,7 +334,7 @@ class RemoveGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -363,7 +372,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -402,7 +411,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -438,7 +447,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -482,7 +491,7 @@ class RemoveGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -505,7 +514,7 @@ class RemoveGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
 
@@ -527,7 +536,7 @@ class RemoveGoodsItemRecordsControllerSpec
       status(result) mustEqual FORBIDDEN
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository, never).exists(requestBody.eori)
+      verify(mockTraderProfilesRepository, never).get(requestBody.eori)
       verify(mockGoodsItemRepository, never).deactivate(any)
     }
   }
@@ -566,9 +575,6 @@ class RemoveGoodsItemRecordsControllerSpec
       locked = false,
       toReview = false,
       reviewReason = None,
-      ukimsNumber = None,
-      nirmsNumber = None,
-      niphlNumber = None,
       srcSystemName = "MDTP",
       updatedDateTime = clock.instant(),
       createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)

@@ -26,7 +26,7 @@ final case class GoodsItemRecord(
                                   metadata: GoodsItemMetadata
                                 ) {
 
-  def toCreateRecordResponse(now: Instant): JsObject = Json.toJsObject(Json.obj(
+  def toCreateRecordResponse(profile: TraderProfile, now: Instant): JsObject = Json.toJsObject(Json.obj(
     "recordId" -> recordId,
     "eori" -> goodsItem.eori,
     "actorId" -> goodsItem.actorId,
@@ -46,14 +46,14 @@ final case class GoodsItemRecord(
     "toReview" -> metadata.toReview,
     "reviewReason" -> metadata.reviewReason,
     "declarable" -> declarable(now),
-    "ukimsNumber" -> metadata.ukimsNumber,
-    "nirmsNumber" -> metadata.nirmsNumber,
-    "niphlNumber" -> metadata.niphlNumber,
+    "ukimsNumber" -> profile.ukimsNumber,
+    "nirmsNumber" -> profile.nirmsNumber,
+    "niphlNumber" -> profile.niphlNumber,
     "createdDateTime" -> metadata.createdDateTime,
     "updatedDateTime" -> metadata.updatedDateTime
   ).fields.filterNot(_._2 == JsNull).toMap)
 
-  def toGetRecordResponse(now: Instant): JsObject = Json.toJsObject(Json.obj(
+  def toGetRecordResponse(profile: TraderProfile, now: Instant): JsObject = Json.toJsObject(Json.obj(
     "recordId" -> recordId,
     "eori" -> goodsItem.eori,
     "actorId" -> goodsItem.actorId,
@@ -73,9 +73,9 @@ final case class GoodsItemRecord(
     "toReview" -> metadata.toReview,
     "reviewReason" -> metadata.reviewReason,
     "declarable" -> declarable(now),
-    "ukimsNumber" -> metadata.ukimsNumber,
-    "nirmsNumber" -> metadata.nirmsNumber,
-    "niphlNumber" -> metadata.niphlNumber,
+    "ukimsNumber" -> profile.ukimsNumber,
+    "nirmsNumber" -> profile.nirmsNumber,
+    "niphlNumber" -> profile.niphlNumber,
     "locked" -> metadata.locked,
     "srcSystemName" -> metadata.srcSystemName,
     "createdDateTime" -> metadata.createdDateTime,
