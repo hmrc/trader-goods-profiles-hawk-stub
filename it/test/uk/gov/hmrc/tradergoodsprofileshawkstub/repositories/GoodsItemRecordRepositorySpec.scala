@@ -20,10 +20,12 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mongodb.scala.model.Filters
 import org.scalactic.source.Position
-import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.OptionValues
+import org.scalatest.concurrent.IntegrationPatience
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.slf4j.MDC
@@ -34,15 +36,23 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.play.bootstrap.dispatchers.MDCPropagatingExecutorService
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.PatchGoodsItemRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.RemoveGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.UpdateGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.DuplicateEoriAndTraderRefException
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.RecordInactiveException
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.RecordLockedException
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
-import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
 import java.util.concurrent.Executors
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 class GoodsItemRecordRepositorySpec
   extends AnyFreeSpec
@@ -224,6 +234,14 @@ class GoodsItemRecordRepositorySpec
       result.totalCount mustBe 9
       result.records.length mustBe 3
       result.records mustBe recordsToMatch.reverse.slice(4, 7).toList
+    }
+
+    "must return totalCount of 0 when there are no records" in {
+
+      val result = repository.get("eori", lastUpdated = Some(clock.instant().minus(8, ChronoUnit.DAYS)), page = 1, size = 3).futureValue
+
+      result.totalCount mustBe 0
+      result.records.length mustBe 0
     }
 
     mustPreserveMdc(repository.get("eori"))
