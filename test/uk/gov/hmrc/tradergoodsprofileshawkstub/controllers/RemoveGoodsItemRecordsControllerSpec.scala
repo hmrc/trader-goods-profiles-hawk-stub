@@ -551,7 +551,7 @@ class RemoveGoodsItemRecordsControllerSpec
       goodsDescription = "goodsDescription",
       countryOfOrigin = "GB",
       category = Category.Controlled,
-      assessments = Seq(
+      assessments = Some(Seq(
         Assessment(
           assessmentId = Some("assessmentId"),
           primaryCategory = Some(Category.Controlled),
@@ -562,7 +562,7 @@ class RemoveGoodsItemRecordsControllerSpec
             conditionTraderText = Some("conditionTraderText")
           ))
         )
-      ),
+      )),
       supplementaryUnit = Some(BigDecimal(2.5)),
       measurementUnit = Some("measurementUnit"),
       comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS),

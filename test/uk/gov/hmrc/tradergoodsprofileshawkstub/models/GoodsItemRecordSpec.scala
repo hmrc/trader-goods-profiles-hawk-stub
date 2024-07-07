@@ -45,7 +45,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
                 primaryCategory = Some(Category.Controlled),
@@ -56,7 +56,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
                   conditionTraderText = Some("conditionTraderText")
                 ))
               )
-            ),
+            )),
             supplementaryUnit = Some(BigDecimal(2.5)),
             measurementUnit = Some("measurementUnit"),
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -129,13 +129,13 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = None,
                 primaryCategory = None,
                 condition = None
               )
-            ),
+            )),
             supplementaryUnit = None,
             measurementUnit = None,
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -204,7 +204,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
                 primaryCategory = Some(Category.Controlled),
@@ -215,7 +215,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
                   conditionTraderText = Some("conditionTraderText")
                 ))
               )
-            ),
+            )),
             supplementaryUnit = Some(BigDecimal(2.5)),
             measurementUnit = Some("measurementUnit"),
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -287,13 +287,13 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = None,
                 primaryCategory = None,
                 condition = None
               )
-            ),
+            )),
             supplementaryUnit = None,
             measurementUnit = None,
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -331,7 +331,69 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
           "goodsDescription" -> minimumGoodsItemRecord.goodsItem.goodsDescription,
           "countryOfOrigin" -> minimumGoodsItemRecord.goodsItem.countryOfOrigin,
           "category" -> minimumGoodsItemRecord.goodsItem.category,
-          "assessments" -> Json.arr(Json.obj()),
+          "comcodeEffectiveFromDate" -> minimumGoodsItemRecord.goodsItem.comcodeEffectiveFromDate,
+          "version" -> minimumGoodsItemRecord.metadata.version,
+          "active" -> minimumGoodsItemRecord.metadata.active,
+          "toReview" -> minimumGoodsItemRecord.metadata.toReview,
+          "declarable" -> minimumGoodsItemRecord.declarable(clock.instant()),
+          "locked" -> minimumGoodsItemRecord.metadata.locked,
+          "srcSystemName" -> minimumGoodsItemRecord.metadata.srcSystemName,
+          "createdDateTime" -> minimumGoodsItemRecord.metadata.createdDateTime,
+          "updatedDateTime" -> minimumGoodsItemRecord.metadata.updatedDateTime
+        )
+
+        minimumGoodsItemRecord.toGetRecordResponse(profile, clock.instant()) mustEqual expectedJson
+      }
+      "when no optional assessment fields are included" in {
+
+        val minimumGoodsItemRecord = GoodsItemRecord(
+          recordId = UUID.randomUUID().toString,
+          goodsItem = GoodsItem(
+            eori = "eori",
+            actorId = "actorId",
+            traderRef = "traderRef",
+            comcode = "comcode",
+            goodsDescription = "goodsDescription",
+            countryOfOrigin = "countryOfOrigin",
+            category = Category.Controlled,
+            assessments = None,
+            supplementaryUnit = None,
+            measurementUnit = None,
+            comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
+            comcodeEffectiveToDate = None
+          ),
+          metadata = GoodsItemMetadata(
+            accreditationStatus = AccreditationStatus.NotRequested,
+            version = 1,
+            active = true,
+            locked = false,
+            toReview = false,
+            reviewReason = None,
+            srcSystemName = "MDTP",
+            updatedDateTime = clock.instant(),
+            createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
+          )
+        )
+
+        val profile = TraderProfile(
+          eori = "eori",
+          actorId = "actorId",
+          ukimsNumber = None,
+          nirmsNumber = None,
+          niphlNumber = None,
+          lastUpdated = clock.instant()
+        )
+
+        val expectedJson = Json.obj(
+          "recordId" -> minimumGoodsItemRecord.recordId,
+          "eori" -> minimumGoodsItemRecord.goodsItem.eori,
+          "actorId" -> minimumGoodsItemRecord.goodsItem.actorId,
+          "traderRef" -> minimumGoodsItemRecord.goodsItem.traderRef,
+          "comcode" -> minimumGoodsItemRecord.goodsItem.comcode,
+          "accreditationStatus" -> minimumGoodsItemRecord.metadata.accreditationStatus,
+          "goodsDescription" -> minimumGoodsItemRecord.goodsItem.goodsDescription,
+          "countryOfOrigin" -> minimumGoodsItemRecord.goodsItem.countryOfOrigin,
+          "category" -> minimumGoodsItemRecord.goodsItem.category,
           "comcodeEffectiveFromDate" -> minimumGoodsItemRecord.goodsItem.comcodeEffectiveFromDate,
           "version" -> minimumGoodsItemRecord.metadata.version,
           "active" -> minimumGoodsItemRecord.metadata.active,
@@ -360,7 +422,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
         goodsDescription = "goodsDescription",
         countryOfOrigin = "countryOfOrigin",
         category = Category.Controlled,
-        assessments = Seq(
+        assessments = Some(Seq(
           Assessment(
             assessmentId = Some("assessmentId"),
             primaryCategory = Some(Category.Controlled),
@@ -371,7 +433,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               conditionTraderText = Some("conditionTraderText")
             ))
           )
-        ),
+        )),
         supplementaryUnit = Some(BigDecimal(2.5)),
         measurementUnit = Some("measurementUnit"),
         comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),

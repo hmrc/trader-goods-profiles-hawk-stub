@@ -29,7 +29,7 @@ final case class GoodsItem(
                             goodsDescription: String,
                             countryOfOrigin: String,
                             category: Category,
-                            assessments: Seq[Assessment],
+                            assessments: Option[Seq[Assessment]],
                             supplementaryUnit: Option[BigDecimal],
                             measurementUnit: Option[String],
                             comcodeEffectiveFromDate: Instant,
