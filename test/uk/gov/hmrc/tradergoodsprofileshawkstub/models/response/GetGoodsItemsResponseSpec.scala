@@ -44,13 +44,13 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
           goodsDescription = "goodsDescription",
           countryOfOrigin = "countryOfOrigin",
           category = Category.Controlled,
-          assessments = Seq(
+          assessments = Some(Seq(
             Assessment(
               assessmentId = None,
               primaryCategory = None,
               condition = None
             )
-          ),
+          )),
           supplementaryUnit = None,
           measurementUnit = None,
           comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),

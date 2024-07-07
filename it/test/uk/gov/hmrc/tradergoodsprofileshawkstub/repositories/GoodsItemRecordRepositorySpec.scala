@@ -299,7 +299,7 @@ class GoodsItemRecordRepositorySpec
             goodsDescription = "anotherGoodsDescription",
             countryOfOrigin = "anotherCountryOfOrigin",
             category = Category.Excluded,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("anotherAssessmentId"),
                 primaryCategory = Some(Category.Standard),
@@ -310,7 +310,7 @@ class GoodsItemRecordRepositorySpec
                   conditionTraderText = Some("anotherConditionTraderText")
                 ))
               )
-            ),
+            )),
             supplementaryUnit = Some(BigDecimal(3.5)),
             measurementUnit = Some("anotherMeasurementUnit"),
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.SECONDS),
@@ -372,7 +372,7 @@ class GoodsItemRecordRepositorySpec
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
                 primaryCategory = Some(Category.Controlled),
@@ -383,7 +383,7 @@ class GoodsItemRecordRepositorySpec
                   conditionTraderText = Some("conditionTraderText")
                 ))
               )
-            ),
+            )),
             supplementaryUnit = Some(BigDecimal(2.5)),
             measurementUnit = Some("measurementUnit"),
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -792,7 +792,7 @@ class GoodsItemRecordRepositorySpec
       goodsDescription = "goodsDescription",
       countryOfOrigin = "countryOfOrigin",
       category = Category.Controlled,
-      assessments = Seq(
+      assessments = Some(Seq(
         Assessment(
           assessmentId = Some("assessmentId"),
           primaryCategory = Some(Category.Controlled),
@@ -803,7 +803,7 @@ class GoodsItemRecordRepositorySpec
             conditionTraderText = Some("conditionTraderText")
           ))
         )
-      ),
+      )),
       supplementaryUnit = Some(BigDecimal(2.5)),
       measurementUnit = Some("measurementUnit"),
       comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),

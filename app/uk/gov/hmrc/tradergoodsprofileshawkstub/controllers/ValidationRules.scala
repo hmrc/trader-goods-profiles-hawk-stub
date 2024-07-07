@@ -18,13 +18,12 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 
 import cats.data._
 import cats.syntax.all._
-import org.apache.pekko.Done
 import org.everit.json.schema.Schema
 import play.api.Configuration
 import play.api.libs.json.{JsValue, Json, Reads}
 import play.api.mvc.{BaseController, RawBuffer, Request, Result}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.ValidationRules.ValidatedHeaders
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{ErrorResponse, TraderProfile}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
@@ -32,8 +31,6 @@ import java.time.Clock
 import java.time.format.DateTimeFormatter
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
-import cats.data.OptionT
 
 trait ValidationRules { this: BaseController =>
 

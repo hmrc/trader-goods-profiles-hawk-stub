@@ -70,7 +70,7 @@ class GoodsItemRecordRepository @Inject() (
         goodsDescription = request.goodsDescription,
         countryOfOrigin = request.countryOfOrigin,
         category = request.category,
-        assessments = request.assessments.getOrElse(Seq.empty), // TODO test?
+        assessments = request.assessments, // TODO test?
         supplementaryUnit = request.supplementaryUnit,
         measurementUnit = request.measurementUnit,
         comcodeEffectiveFromDate = request.comcodeEffectiveFromDate,
