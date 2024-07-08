@@ -32,6 +32,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.Declarable
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.PatchGoodsItemRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository
 
@@ -67,7 +68,23 @@ class GoodsItemTestSupportControllerSpec
 
       when(mockRepository.patch(any)).thenReturn(Future.successful(Some(Done)))
 
-      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None)
+      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None, None)
+
+      val request = FakeRequest(routes.GoodsItemTestSupportController.patch())
+        .withJsonBody(Json.toJson(patchRequest))
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+      verify(mockRepository, times(1)).patch(patchRequest)
+    }
+
+    "must patch a record and return OK when the patch succeeds in the database with declarable" in {
+
+      when(mockRepository.patch(any)).thenReturn(Future.successful(Some(Done)))
+
+      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, Some(Declarable.ImmiReady), None, None)
 
       val request = FakeRequest(routes.GoodsItemTestSupportController.patch())
         .withJsonBody(Json.toJson(patchRequest))
@@ -83,7 +100,7 @@ class GoodsItemTestSupportControllerSpec
 
       when(mockRepository.patch(any)).thenReturn(Future.successful(None))
 
-      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None)
+      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, None, None, None)
 
       val request = FakeRequest(routes.GoodsItemTestSupportController.patch())
         .withJsonBody(Json.toJson(patchRequest))

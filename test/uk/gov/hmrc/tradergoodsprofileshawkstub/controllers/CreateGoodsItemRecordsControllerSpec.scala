@@ -612,6 +612,7 @@ class CreateGoodsItemRecordsControllerSpec
       active = true,
       locked = false,
       toReview = false,
+      declarable = None,
       reviewReason = None,
       srcSystemName = "MDTP",
       updatedDateTime = clock.instant(),

@@ -131,7 +131,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       status(result) mustEqual OK
 
-      contentAsJson(result) mustEqual record.toCreateRecordResponse(profile, clock.instant())
+      contentAsJson(result) mustEqual record.toGetRecordResponse(profile, clock.instant())
       header("X-Correlation-ID", result).value mustEqual correlationId
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
@@ -725,6 +725,7 @@ class UpdateGoodsItemRecordsControllerSpec
       active = true,
       locked = false,
       toReview = false,
+      declarable = None,
       reviewReason = None,
       srcSystemName = "MDTP",
       updatedDateTime = clock.instant(),

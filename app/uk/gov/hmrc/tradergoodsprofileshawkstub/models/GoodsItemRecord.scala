@@ -72,7 +72,7 @@ final case class GoodsItemRecord(
     "active" -> metadata.active,
     "toReview" -> metadata.toReview,
     "reviewReason" -> metadata.reviewReason,
-    "declarable" -> declarable(now),
+    "declarable" -> metadata.declarable,
     "ukimsNumber" -> profile.ukimsNumber,
     "nirmsNumber" -> profile.nirmsNumber,
     "niphlNumber" -> profile.niphlNumber,
