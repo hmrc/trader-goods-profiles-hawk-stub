@@ -95,7 +95,7 @@ class CreateGoodsItemRecordsControllerSpec
       goodsDescription = record.goodsItem.goodsDescription,
       countryOfOrigin = record.goodsItem.countryOfOrigin,
       category = record.goodsItem.category,
-      assessments = Some(record.goodsItem.assessments),
+      assessments = record.goodsItem.assessments,
       supplementaryUnit = record.goodsItem.supplementaryUnit,
       measurementUnit = record.goodsItem.measurementUnit,
       comcodeEffectiveFromDate = record.goodsItem.comcodeEffectiveFromDate,
@@ -589,7 +589,7 @@ class CreateGoodsItemRecordsControllerSpec
       goodsDescription = "goodsDescription",
       countryOfOrigin = "GB",
       category = Category.Controlled,
-      assessments = Seq(
+      assessments = Some(Seq(
         Assessment(
           assessmentId = Some("assessmentId"),
           primaryCategory = Some(Category.Controlled),
@@ -600,7 +600,7 @@ class CreateGoodsItemRecordsControllerSpec
             conditionTraderText = Some("conditionTraderText")
           ))
         )
-      ),
+      )),
       supplementaryUnit = Some(BigDecimal(2.5)),
       measurementUnit = Some("measurementUnit"),
       comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS),

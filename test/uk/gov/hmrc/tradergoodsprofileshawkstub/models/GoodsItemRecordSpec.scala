@@ -45,7 +45,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
                 primaryCategory = Some(Category.Controlled),
@@ -56,7 +56,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
                   conditionTraderText = Some("conditionTraderText")
                 ))
               )
-            ),
+            )),
             supplementaryUnit = Some(BigDecimal(2.5)),
             measurementUnit = Some("measurementUnit"),
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -129,13 +129,13 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = None,
                 primaryCategory = None,
                 condition = None
               )
-            ),
+            )),
             supplementaryUnit = None,
             measurementUnit = None,
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -204,7 +204,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
+            assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
                 primaryCategory = Some(Category.Controlled),
@@ -215,7 +215,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
                   conditionTraderText = Some("conditionTraderText")
                 ))
               )
-            ),
+            )),
             supplementaryUnit = Some(BigDecimal(2.5)),
             measurementUnit = Some("measurementUnit"),
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -287,13 +287,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
             category = Category.Controlled,
-            assessments = Seq(
-              Assessment(
-                assessmentId = None,
-                primaryCategory = None,
-                condition = None
-              )
-            ),
+            assessments = None,
             supplementaryUnit = None,
             measurementUnit = None,
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -331,7 +325,6 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
           "goodsDescription" -> minimumGoodsItemRecord.goodsItem.goodsDescription,
           "countryOfOrigin" -> minimumGoodsItemRecord.goodsItem.countryOfOrigin,
           "category" -> minimumGoodsItemRecord.goodsItem.category,
-          "assessments" -> Json.arr(Json.obj()),
           "comcodeEffectiveFromDate" -> minimumGoodsItemRecord.goodsItem.comcodeEffectiveFromDate,
           "version" -> minimumGoodsItemRecord.metadata.version,
           "active" -> minimumGoodsItemRecord.metadata.active,
@@ -360,7 +353,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
         goodsDescription = "goodsDescription",
         countryOfOrigin = "countryOfOrigin",
         category = Category.Controlled,
-        assessments = Seq(
+        assessments = Some(Seq(
           Assessment(
             assessmentId = Some("assessmentId"),
             primaryCategory = Some(Category.Controlled),
@@ -371,7 +364,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               conditionTraderText = Some("conditionTraderText")
             ))
           )
-        ),
+        )),
         supplementaryUnit = Some(BigDecimal(2.5)),
         measurementUnit = Some("measurementUnit"),
         comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
