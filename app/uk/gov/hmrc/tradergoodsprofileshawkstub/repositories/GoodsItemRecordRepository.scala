@@ -83,6 +83,7 @@ class GoodsItemRecordRepository @Inject() (
         locked = false,
         toReview = false,
         reviewReason = None,
+        declarable = None,
         srcSystemName = "MDTP",
         createdDateTime = clock.instant(),
         updatedDateTime = clock.instant()
@@ -174,6 +175,7 @@ class GoodsItemRecordRepository @Inject() (
       request.active.map(Updates.set("metadata.active", _)),
       request.locked.map(Updates.set("metadata.locked", _)),
       request.toReview.map(Updates.set("metadata.toReview", _)),
+      request.declarable.map(declarable => Updates.set("metadata.declarable", declarable.toString)),
       request.reviewReason.map(Updates.set("metadata.reviewReason", _)),
       request.updatedDateTime.map(Updates.set("metadata.updatedDateTime", _))
     ).flatten

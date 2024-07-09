@@ -17,7 +17,7 @@
 package uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests
 
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.AccreditationStatus
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{AccreditationStatus, Declarable}
 
 import java.time.Instant
 
@@ -29,6 +29,7 @@ final case class PatchGoodsItemRequest(
                                         active: Option[Boolean],
                                         locked: Option[Boolean],
                                         toReview: Option[Boolean],
+                                        declarable: Option[Declarable],
                                         reviewReason: Option[String],
                                         updatedDateTime: Option[Instant]
                                       )

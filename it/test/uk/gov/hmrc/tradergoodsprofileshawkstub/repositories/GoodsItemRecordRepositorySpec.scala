@@ -322,6 +322,7 @@ class GoodsItemRecordRepositorySpec
             active = true,
             locked = false,
             toReview = false,
+            declarable = None,
             reviewReason = None,
             srcSystemName = "MDTP",
             createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS),
@@ -395,6 +396,7 @@ class GoodsItemRecordRepositorySpec
             active = true,
             locked = false,
             toReview = false,
+            declarable = None,
             reviewReason = None,
             srcSystemName = "MDTP",
             updatedDateTime = clock.instant(),
@@ -628,6 +630,7 @@ class GoodsItemRecordRepositorySpec
         active = None,
         locked = None,
         toReview = None,
+        declarable = None,
         reviewReason = None,
         updatedDateTime = None
       )
@@ -639,6 +642,7 @@ class GoodsItemRecordRepositorySpec
           active = record.metadata.active,
           locked = record.metadata.locked,
           toReview = record.metadata.toReview,
+          declarable = record.metadata.declarable,
           reviewReason = record.metadata.reviewReason,
           srcSystemName = record.metadata.srcSystemName,
           createdDateTime = record.metadata.createdDateTime,
@@ -666,6 +670,7 @@ class GoodsItemRecordRepositorySpec
         active = None,
         locked = None,
         toReview = None,
+        declarable = None,
         reviewReason = None,
         updatedDateTime = None
       )
@@ -677,6 +682,7 @@ class GoodsItemRecordRepositorySpec
           active = record.metadata.active,
           locked = record.metadata.locked,
           toReview = record.metadata.toReview,
+          declarable = record.metadata.declarable,
           reviewReason = record.metadata.reviewReason,
           srcSystemName = record.metadata.srcSystemName,
           createdDateTime = record.metadata.createdDateTime,
@@ -704,6 +710,7 @@ class GoodsItemRecordRepositorySpec
         active = None,
         locked = None,
         toReview = None,
+        declarable = None,
         reviewReason = None,
         updatedDateTime = None
       )
@@ -728,6 +735,7 @@ class GoodsItemRecordRepositorySpec
         active = None,
         locked = None,
         toReview = None,
+        declarable = None,
         reviewReason = None,
         updatedDateTime = None
       )
@@ -815,6 +823,7 @@ class GoodsItemRecordRepositorySpec
       active = true,
       locked = false,
       toReview = false,
+      declarable = None,
       reviewReason = None,
       srcSystemName = "MDTP",
       updatedDateTime = clock.instant(),

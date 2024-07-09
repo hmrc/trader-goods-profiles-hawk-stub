@@ -56,7 +56,7 @@ class UpdateGoodsItemRecordsController @Inject()(
     } yield {
       goodsItemRecordRepository.update(body).map {
         _.map { goodsItemRecord =>
-          Ok(goodsItemRecord.toCreateRecordResponse(profile, clock.instant()))
+          Ok(goodsItemRecord.toGetRecordResponse(profile, clock.instant()))
         }.getOrElse {
           badRequest(
             errorCode = "400",

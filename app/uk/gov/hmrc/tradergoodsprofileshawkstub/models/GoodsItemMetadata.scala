@@ -27,6 +27,7 @@ final case class GoodsItemMetadata(
                                     active: Boolean,
                                     locked: Boolean,
                                     toReview: Boolean,
+                                    declarable: Option[String],
                                     reviewReason: Option[String],
                                     srcSystemName: String,
                                     createdDateTime: Instant,
