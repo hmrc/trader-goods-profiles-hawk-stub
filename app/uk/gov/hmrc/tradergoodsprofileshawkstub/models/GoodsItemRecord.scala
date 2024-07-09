@@ -53,35 +53,36 @@ final case class GoodsItemRecord(
     "updatedDateTime" -> metadata.updatedDateTime
   ).fields.filterNot(_._2 == JsNull).toMap)
 
-  def toGetRecordResponse(profile: TraderProfile, now: Instant): JsObject = Json.toJsObject(Json.obj(
-    "recordId" -> recordId,
-    "eori" -> goodsItem.eori,
-    "actorId" -> goodsItem.actorId,
-    "traderRef" -> goodsItem.traderRef,
-    "comcode" -> goodsItem.comcode,
-    "accreditationStatus" -> metadata.accreditationStatus,
-    "goodsDescription" -> goodsItem.goodsDescription,
-    "countryOfOrigin" -> goodsItem.countryOfOrigin,
-    "category" -> goodsItem.category,
-    "assessments" -> goodsItem.assessments,
-    "supplementaryUnit" -> goodsItem.supplementaryUnit,
-    "measurementUnit" -> goodsItem.measurementUnit,
-    "comcodeEffectiveFromDate" -> goodsItem.comcodeEffectiveFromDate,
-    "comcodeEffectiveToDate" -> goodsItem.comcodeEffectiveToDate,
-    "version" -> metadata.version,
-    "active" -> metadata.active,
-    "toReview" -> metadata.toReview,
-    "reviewReason" -> metadata.reviewReason,
-    "declarable" -> metadata.declarable,
-    "ukimsNumber" -> profile.ukimsNumber,
-    "nirmsNumber" -> profile.nirmsNumber,
-    "niphlNumber" -> profile.niphlNumber,
-    "locked" -> metadata.locked,
-    "srcSystemName" -> metadata.srcSystemName,
-    "createdDateTime" -> metadata.createdDateTime,
-    "updatedDateTime" -> metadata.updatedDateTime
-  ).fields.filterNot(_._2 == JsNull).toMap)
-
+  def toGetRecordResponse(profile: TraderProfile, now: Instant): JsObject = {
+    Json.toJsObject(Json.obj(
+      "recordId" -> recordId,
+      "eori" -> goodsItem.eori,
+      "actorId" -> goodsItem.actorId,
+      "traderRef" -> goodsItem.traderRef,
+      "comcode" -> goodsItem.comcode,
+      "accreditationStatus" -> metadata.accreditationStatus,
+      "goodsDescription" -> goodsItem.goodsDescription,
+      "countryOfOrigin" -> goodsItem.countryOfOrigin,
+      "category" -> goodsItem.category,
+      "assessments" -> goodsItem.assessments,
+      "supplementaryUnit" -> goodsItem.supplementaryUnit,
+      "measurementUnit" -> goodsItem.measurementUnit,
+      "comcodeEffectiveFromDate" -> goodsItem.comcodeEffectiveFromDate,
+      "comcodeEffectiveToDate" -> goodsItem.comcodeEffectiveToDate,
+      "version" -> metadata.version,
+      "active" -> metadata.active,
+      "toReview" -> metadata.toReview,
+      "reviewReason" -> metadata.reviewReason,
+      "declarable" -> (if (metadata.declarable.isEmpty)  declarable(now) else metadata.declarable),
+      "ukimsNumber" -> profile.ukimsNumber,
+      "nirmsNumber" -> profile.nirmsNumber,
+      "niphlNumber" -> profile.niphlNumber,
+      "locked" -> metadata.locked,
+      "srcSystemName" -> metadata.srcSystemName,
+      "createdDateTime" -> metadata.createdDateTime,
+      "updatedDateTime" -> metadata.updatedDateTime
+    ).fields.filterNot(_._2 == JsNull).toMap)
+  }
   def declarable(now: Instant): Declarable =
     if (metadata.active && !metadata.toReview && comcodeInEffect(now)) {
       goodsItem.category match {
