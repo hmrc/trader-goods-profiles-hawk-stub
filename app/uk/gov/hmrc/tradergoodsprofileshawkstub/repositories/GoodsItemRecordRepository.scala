@@ -170,12 +170,12 @@ class GoodsItemRecordRepository @Inject() (
   def patch(request: PatchGoodsItemRequest): Future[Option[Done]] = Mdc.preservingMdc {
 
     val updates = Seq(
-      request.accreditationStatus.map(x => Updates.set("metadata.accreditationStatus", x.toString)),
+      request.accreditationStatus.map(x => Updates.set("metadata.accreditationStatus", x.entryName)),
       request.version.map(Updates.set("metadata.version", _)),
       request.active.map(Updates.set("metadata.active", _)),
       request.locked.map(Updates.set("metadata.locked", _)),
       request.toReview.map(Updates.set("metadata.toReview", _)),
-      request.declarable.map(declarable => Updates.set("metadata.declarable", declarable.toString)),
+      request.declarable.map(declarable => Updates.set("metadata.declarable", declarable.entryName)),
       request.reviewReason.map(Updates.set("metadata.reviewReason", _)),
       request.updatedDateTime.map(Updates.set("metadata.updatedDateTime", _))
     ).flatten
