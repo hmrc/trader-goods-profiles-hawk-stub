@@ -125,7 +125,7 @@ class GetGoodsItemRecordsController @Inject()(
   private def validateSize(implicit request: Request[_]): EitherNec[String, Option[Int]] =
     request.getQueryString("size").traverse { string =>
       string.toIntOption
-        .filter(s => s >= 0 && s < maxSize)
+        .filter(s => s >= 0 && s <= maxSize)
         .toRightNec("error: 030, message: Invalid Request Parameter")
     }
 
