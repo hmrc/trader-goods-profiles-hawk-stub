@@ -425,7 +425,7 @@ class GetGoodsItemRecordsControllerSpec
 
     "must return a response with elements when results are returned" in {
 
-      val request = FakeRequest(url(record.goodsItem.eori, page = Some("2"), size = Some("3"), lastUpdatedDate = Some(lastUpdatedTimeString)))
+      val request = FakeRequest(url(record.goodsItem.eori, page = Some("0"), size = Some("1338"), lastUpdatedDate = Some(lastUpdatedTimeString)))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -447,7 +447,7 @@ class GetGoodsItemRecordsControllerSpec
 
       val expectedResponse = Json.toJson(GetGoodsItemsResponse(
         goodsItemRecords = Seq(record),
-        pagination = Pagination(totalRecords = 7, page = 2, size = 3)
+        pagination = Pagination(totalRecords = 7, page = 0, size = 1338)
       ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
 
       contentAsJson(result) mustEqual expectedResponse
@@ -457,7 +457,7 @@ class GetGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(record.goodsItem.eori)
-      verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 2, size = 3)
+      verify(mockGoodsItemRepository).get(record.goodsItem.eori, lastUpdated = Some(lastUpdatedTime), page = 0, size = 1338)
     }
 
     "must return an empty response when a result is not returned" in {
