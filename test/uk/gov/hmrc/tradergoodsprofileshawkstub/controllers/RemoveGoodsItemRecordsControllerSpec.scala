@@ -167,6 +167,47 @@ class RemoveGoodsItemRecordsControllerSpec
       verify(mockGoodsItemRepository).deactivate(any)
     }
 
+    "must return an error when the record is already deactivated" in {
+
+      val deactivatedRecord = record.copy(metadata = record.metadata.copy(active = false))
+
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
+      when(mockGoodsItemRepository.deactivate(any)).thenReturn(Future.successful(Some(deactivatedRecord)))
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 031, message: Invalid Request Parameter"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
+      verify(mockGoodsItemRepository).deactivate(any)
+    }
+
     "must return an error when there is no profile matching the eori" in {
 
       val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))

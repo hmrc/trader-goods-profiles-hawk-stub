@@ -54,8 +54,17 @@ class RemoveGoodsItemRecordsController @Inject()(
       _                <- getTraderProfile(body.eori)
     } yield {
       goodsItemRecordRepository.deactivate(body).map {
-        _.map { _ =>
-          Ok
+        _.map { record =>
+          if (record.metadata.active) {
+            Ok
+          } else {
+            badRequest(
+              errorCode = "400",
+              errorMessage = "Bad Request",
+              source = "BACKEND",
+              detail = Seq("error: 031, message: Invalid Request Parameter")
+            )
+          }
         }.getOrElse {
           badRequest(
             errorCode = "400",
