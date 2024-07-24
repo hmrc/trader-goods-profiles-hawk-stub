@@ -206,7 +206,8 @@ class GoodsItemRecordRepository @Inject() (
     collection.findOneAndUpdate(
       Filters.and(
         Filters.eq("recordId", request.recordId),
-        Filters.eq("goodsItem.eori", request.eori)
+        Filters.eq("goodsItem.eori", request.eori),
+        Filters.eq("metadata.active", true)
       ),
       Updates.combine(
         Updates.set("metadata.active", false),

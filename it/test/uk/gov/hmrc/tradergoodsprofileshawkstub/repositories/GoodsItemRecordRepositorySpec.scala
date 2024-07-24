@@ -766,20 +766,14 @@ class GoodsItemRecordRepositorySpec
       updatedRecord mustEqual expectedRecord
     }
 
-    "must set the `active` property to false, increment the version, set the actorId and return the old state of the record when the existing record is not active" in {
+    "must return none when the existing record is not active" in {
 
       val record = generateRecord.copy(metadata = generateRecord.metadata.copy(active = false))
-      val expectedRecord = record.copy(metadata = record.metadata.copy(version = 2), goodsItem = record.goodsItem.copy(actorId = "newActorId"))
-
       repository.collection.insertOne(record).toFuture().futureValue
 
       val request = RemoveGoodsItemRecordRequest(record.goodsItem.eori, record.recordId, "newActorId")
-      val result = repository.deactivate(request).futureValue.value
-
-      result mustEqual record
-
-      val updatedRecord = repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue
-      updatedRecord mustEqual expectedRecord
+      val result = repository.deactivate(request).futureValue
+      result mustBe None
     }
 
     "must return none when there is no existing record" in {
