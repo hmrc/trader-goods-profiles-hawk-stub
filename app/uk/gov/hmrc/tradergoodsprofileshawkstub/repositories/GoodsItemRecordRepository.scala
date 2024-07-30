@@ -31,6 +31,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemR
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
+import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
@@ -112,7 +113,7 @@ class GoodsItemRecordRepository @Inject() (
       Aggregates.`match`(
         Filters.and(
           Filters.eq("goodsItem.eori", eori),
-          lastUpdated.map(Filters.gte("metadata.updatedDateTime", _)).getOrElse(Filters.empty())
+          lastUpdated.map(Filters.gt("metadata.updatedDateTime", _)).getOrElse(Filters.empty())
         )
       ),
       Aggregates.sort(Sorts.ascending("metadata.updatedDateTime")),
@@ -211,7 +212,8 @@ class GoodsItemRecordRepository @Inject() (
       Updates.combine(
         Updates.set("metadata.active", false),
         Updates.inc("metadata.version", 1),
-        Updates.set("goodsItem.actorId", request.actorId)
+        Updates.set("goodsItem.actorId", request.actorId),
+        Updates.set("metadata.updatedDateTime", clock.instant().truncatedTo(ChronoUnit.SECONDS))
       )
     ).headOption()
   }
