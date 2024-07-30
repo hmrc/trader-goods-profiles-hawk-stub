@@ -229,7 +229,7 @@ class GoodsItemRecordRepositorySpec
 
       repository.collection.insertMany(recordsToMatch ++ recordsToIgnore).toFuture().futureValue
 
-      val result = repository.get("eori", lastUpdated = Some(clock.instant().minus(8, ChronoUnit.DAYS)), page = 1, size = 3).futureValue
+      val result = repository.get("eori", lastUpdated = Some(clock.instant().minus(8, ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS)), page = 1, size = 3).futureValue
 
       result.totalCount mustBe 9
       result.records.length mustBe 3
@@ -750,10 +750,17 @@ class GoodsItemRecordRepositorySpec
 
   "deactivate" - {
 
-    "must set the `active` property to false, increment the version, set the actorId, and return the old state of the record when the existing record is active" in {
+    "must set the `active` property to false, increment the version, set the actorId, set the updatedDateTime, and return the old state of the record when the existing record is active" in {
 
       val record = generateRecord
-      val expectedRecord = record.copy(metadata = record.metadata.copy(active = false, version = 2), goodsItem = record.goodsItem.copy(actorId = "newActorId"))
+      val expectedRecord = record.copy(
+        metadata = record.metadata.copy(
+          active = false,
+          version = 2,
+          updatedDateTime = clock.instant().truncatedTo(ChronoUnit.SECONDS)
+        ),
+        goodsItem = record.goodsItem.copy(actorId = "newActorId")
+      )
 
       repository.collection.insertOne(record).toFuture().futureValue
 
@@ -766,10 +773,16 @@ class GoodsItemRecordRepositorySpec
       updatedRecord mustEqual expectedRecord
     }
 
-    "must set the `active` property to false, increment the version, set the actorId and return the old state of the record when the existing record is not active" in {
+    "must set the `active` property to false, increment the version, set the actorId, set the updatedDateTime and return the old state of the record when the existing record is not active" in {
 
       val record = generateRecord.copy(metadata = generateRecord.metadata.copy(active = false))
-      val expectedRecord = record.copy(metadata = record.metadata.copy(version = 2), goodsItem = record.goodsItem.copy(actorId = "newActorId"))
+      val expectedRecord = record.copy(
+        metadata = record.metadata.copy(
+          version = 2,
+          updatedDateTime = clock.instant().truncatedTo(ChronoUnit.SECONDS)
+        ),
+        goodsItem = record.goodsItem.copy(actorId = "newActorId")
+      )
 
       repository.collection.insertOne(record).toFuture().futureValue
 
