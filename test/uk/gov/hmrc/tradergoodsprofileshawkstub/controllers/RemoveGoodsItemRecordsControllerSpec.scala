@@ -591,7 +591,7 @@ class RemoveGoodsItemRecordsControllerSpec
       comcode = "comcode",
       goodsDescription = "goodsDescription",
       countryOfOrigin = "GB",
-      category = Category.Controlled,
+      category = Some(Category.Controlled),
       assessments = Some(Seq(
         Assessment(
           assessmentId = Some("assessmentId"),

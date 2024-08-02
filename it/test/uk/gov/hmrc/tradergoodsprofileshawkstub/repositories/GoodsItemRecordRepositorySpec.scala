@@ -99,7 +99,7 @@ class GoodsItemRecordRepositorySpec
       comcode = "comcode",
       goodsDescription = "goodsDescription",
       countryOfOrigin = "countryOfOrigin",
-      category = Category.Controlled,
+      category = Some(Category.Controlled),
       assessments = Some(Seq(
         Assessment(
           assessmentId = Some("assessmentId"),
@@ -298,7 +298,7 @@ class GoodsItemRecordRepositorySpec
             comcode = "anotherComcode",
             goodsDescription = "anotherGoodsDescription",
             countryOfOrigin = "anotherCountryOfOrigin",
-            category = Category.Excluded,
+            category = Some(Category.Excluded),
             assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("anotherAssessmentId"),
@@ -372,7 +372,7 @@ class GoodsItemRecordRepositorySpec
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = Category.Controlled,
+            category = Some(Category.Controlled),
             assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
@@ -812,7 +812,7 @@ class GoodsItemRecordRepositorySpec
       comcode = "comcode",
       goodsDescription = "goodsDescription",
       countryOfOrigin = "countryOfOrigin",
-      category = Category.Controlled,
+      category = Some(Category.Controlled),
       assessments = Some(Seq(
         Assessment(
           assessmentId = Some("assessmentId"),
