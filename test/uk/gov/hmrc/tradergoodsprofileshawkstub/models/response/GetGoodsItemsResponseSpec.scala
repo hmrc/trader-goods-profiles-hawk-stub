@@ -43,7 +43,7 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
           comcode = "comcode",
           goodsDescription = "goodsDescription",
           countryOfOrigin = "countryOfOrigin",
-          category = Category.Controlled,
+          category = Some(Category.Controlled),
           assessments = Some(Seq(
             Assessment(
               assessmentId = None,

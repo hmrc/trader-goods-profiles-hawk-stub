@@ -86,11 +86,11 @@ final case class GoodsItemRecord(
   def declarable(now: Instant): Declarable =
     if (metadata.active && !metadata.toReview && comcodeInEffect(now)) {
       goodsItem.category match {
-        case Category.Standard =>
+        case Some(Category.Standard) =>
           if (goodsItem.comcode.length >= 6) Declarable.ImmiReady else Declarable.NotReady
-        case Category.Controlled =>
+        case Some(Category.Controlled) =>
           if (goodsItem.comcode.length >= 8) Declarable.ImmiReady else Declarable.NotReady
-        case Category.Excluded =>
+        case Some(Category.Excluded) =>
           Declarable.ImmiNotReady
       }
     } else {

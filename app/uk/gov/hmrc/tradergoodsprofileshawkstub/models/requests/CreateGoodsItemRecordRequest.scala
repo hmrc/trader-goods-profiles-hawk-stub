@@ -28,7 +28,7 @@ final case class CreateGoodsItemRecordRequest(
                                                comcode: String,
                                                goodsDescription: String,
                                                countryOfOrigin: String,
-                                               category: Category,
+                                               category: Option[Category],
                                                assessments: Option[Seq[Assessment]],
                                                supplementaryUnit: Option[BigDecimal],
                                                measurementUnit: Option[String],

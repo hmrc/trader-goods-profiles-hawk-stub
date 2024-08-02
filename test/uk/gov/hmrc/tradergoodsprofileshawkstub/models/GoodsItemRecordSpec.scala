@@ -44,7 +44,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = Category.Controlled,
+            category = Some(Category.Controlled),
             assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
@@ -129,7 +129,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = Category.Controlled,
+            category = Some(Category.Controlled),
             assessments = Some(Seq(
               Assessment(
                 assessmentId = None,
@@ -205,7 +205,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = Category.Controlled,
+            category = Some(Category.Controlled),
             assessments = Some(Seq(
               Assessment(
                 assessmentId = Some("assessmentId"),
@@ -289,7 +289,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
             comcode = "comcode",
             goodsDescription = "goodsDescription",
             countryOfOrigin = "countryOfOrigin",
-            category = Category.Controlled,
+            category = Some(Category.Controlled),
             assessments = None,
             supplementaryUnit = None,
             measurementUnit = None,
@@ -356,7 +356,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
         comcode = "comcode",
         goodsDescription = "goodsDescription",
         countryOfOrigin = "countryOfOrigin",
-        category = Category.Controlled,
+        category = Some(Category.Controlled),
         assessments = Some(Seq(
           Assessment(
             assessmentId = Some("assessmentId"),
@@ -401,7 +401,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               val record2 = record.copy(
                 goodsItem = record.goodsItem.copy(
                   comcode = "a" * 6,
-                  category = Category.Standard,
+                  category = Some(Category.Standard),
                   comcodeEffectiveFromDate = clock.instant().plus(1, ChronoUnit.DAYS),
                   comcodeEffectiveToDate = None
                 ),
@@ -422,7 +422,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               val record2 = record.copy(
                 goodsItem = record.goodsItem.copy(
                   comcode = "a" * 6,
-                  category = Category.Standard,
+                  category = Some(Category.Standard),
                   comcodeEffectiveFromDate = clock.instant().minus(2, ChronoUnit.DAYS),
                   comcodeEffectiveToDate = Some(clock.instant().minus(1, ChronoUnit.DAYS))
                 ),
@@ -445,7 +445,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
                 val record2 = record.copy(
                   goodsItem = record.goodsItem.copy(
                     comcode = "a" * 6,
-                    category = Category.Standard,
+                    category = Some(Category.Standard),
                     comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
                     comcodeEffectiveToDate = None
                   ),
@@ -466,7 +466,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
                 val record2 = record.copy(
                   goodsItem = record.goodsItem.copy(
                     comcode = "a" * 5,
-                    category = Category.Standard,
+                    category = Some(Category.Standard),
                     comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
                     comcodeEffectiveToDate = None
                   ),
@@ -491,7 +491,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               val record2 = record.copy(
                 goodsItem = record.goodsItem.copy(
                   comcode = "a" * 8,
-                  category = Category.Controlled,
+                  category = Some(Category.Controlled),
                   comcodeEffectiveFromDate = clock.instant().plus(1, ChronoUnit.DAYS),
                   comcodeEffectiveToDate = None
                 ),
@@ -512,7 +512,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               val record2 = record.copy(
                 goodsItem = record.goodsItem.copy(
                   comcode = "a" * 8,
-                  category = Category.Controlled,
+                  category = Some(Category.Controlled),
                   comcodeEffectiveFromDate = clock.instant().minus(2, ChronoUnit.DAYS),
                   comcodeEffectiveToDate = Some(clock.instant().minus(1, ChronoUnit.DAYS))
                 ),
@@ -535,7 +535,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
                 val record2 = record.copy(
                   goodsItem = record.goodsItem.copy(
                     comcode = "a" * 8,
-                    category = Category.Controlled,
+                    category = Some(Category.Controlled),
                     comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
                     comcodeEffectiveToDate = None
                   ),
@@ -556,7 +556,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
                 val record2 = record.copy(
                   goodsItem = record.goodsItem.copy(
                     comcode = "a" * 7,
-                    category = Category.Controlled,
+                    category = Some(Category.Controlled),
                     comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
                     comcodeEffectiveToDate = None
                   ),
@@ -581,7 +581,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               val record2 = record.copy(
                 goodsItem = record.goodsItem.copy(
                   comcode = "a" * 8,
-                  category = Category.Excluded,
+                  category = Some(Category.Excluded),
                   comcodeEffectiveFromDate = clock.instant().plus(1, ChronoUnit.DAYS),
                   comcodeEffectiveToDate = None
                 ),
@@ -602,7 +602,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               val record2 = record.copy(
                 goodsItem = record.goodsItem.copy(
                   comcode = "a" * 8,
-                  category = Category.Excluded,
+                  category = Some(Category.Excluded),
                   comcodeEffectiveFromDate = clock.instant().minus(2, ChronoUnit.DAYS),
                   comcodeEffectiveToDate = Some(clock.instant().minus(1, ChronoUnit.DAYS))
                 ),
@@ -623,7 +623,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
               val record2 = record.copy(
                 goodsItem = record.goodsItem.copy(
                   comcode = "a" * 8,
-                  category = Category.Excluded,
+                  category = Some(Category.Excluded),
                   comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
                   comcodeEffectiveToDate = None
                 ),
@@ -647,7 +647,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
         val record2 = record.copy(
           goodsItem = record.goodsItem.copy(
             comcode = "a" * 6,
-            category = Category.Standard,
+            category = Some(Category.Standard),
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
             comcodeEffectiveToDate = None
           ),
@@ -668,7 +668,7 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
         val record2 = record.copy(
           goodsItem = record.goodsItem.copy(
             comcode = "a" * 6,
-            category = Category.Standard,
+            category = Some(Category.Standard),
             comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
             comcodeEffectiveToDate = None
           ),
