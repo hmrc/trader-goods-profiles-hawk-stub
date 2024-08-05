@@ -80,7 +80,6 @@
     "comcode",
     "goodsDescription",
     "countryOfOrigin",
-    "category",
     "comcodeEffectiveFromDate"
   ],
   "additionalProperties": false,
