@@ -43,10 +43,11 @@ trait ValidationRules { this: BaseController =>
   implicit def ec: ExecutionContext
 
   private val expectedAuthHeader: String = configuration.get[String]("expected-auth-header")
-  private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
+  private val rfc7231Formatter           = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
 
   protected def validateAuthorization(implicit request: Request[_]): Either[Result, _] =
-    request.headers.get("Authorization")
+    request.headers
+      .get("Authorization")
       .filter(_ == expectedAuthHeader)
       .toRight(Forbidden)
 
@@ -57,16 +58,20 @@ trait ValidationRules { this: BaseController =>
     request.headers.get("X-Forwarded-Host").toRightNec("error: 005, message: Invalid Header")
 
   protected def validateDate(implicit request: Request[_]): EitherNec[String, _] =
-    request.headers.get("Date").flatMap { dateString =>
-      Try(rfc7231Formatter.parse(dateString)).toOption
-    }.toRightNec("error: 002, message: Invalid Header")
+    request.headers
+      .get("Date")
+      .flatMap { dateString =>
+        Try(rfc7231Formatter.parse(dateString)).toOption
+      }
+      .toRightNec("error: 002, message: Invalid Header")
 
   protected def validateContentType(implicit request: Request[_]): EitherNec[String, _] =
-    request.headers.get("Content-Type")
+    request.headers
+      .get("Content-Type")
       .filter(_ == "application/json")
       .toRightNec("error: 003, message: Invalid Header")
 
-  protected def validateWriteHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] = {
+  protected def validateWriteHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] =
     (
       validateCorrelationId,
       validateForwardedHost,
@@ -82,9 +87,8 @@ trait ValidationRules { this: BaseController =>
         detail = errors.toList
       )
     }
-  }
 
-  protected def validateJsonBody(implicit request: Request[RawBuffer]): Either[Result, JsValue] = {
+  protected def validateJsonBody(implicit request: Request[RawBuffer]): Either[Result, JsValue] =
     request.body.asBytes().toRight(EntityTooLarge).flatMap { byteString =>
       Try(Json.parse(byteString.utf8String)).toOption.toRight {
         badRequest(
@@ -95,29 +99,27 @@ trait ValidationRules { this: BaseController =>
         )
       }
     }
-  }
 
-  protected def validateRequestBody[A: Reads](schema: Schema)(implicit request: Request[RawBuffer]): Either[Result, A] = {
+  protected def validateRequestBody[A: Reads](schema: Schema)(implicit request: Request[RawBuffer]): Either[Result, A] =
     validateJsonBody.flatMap { json =>
-
       val validationErrors = schemaValidationService.validate(schema, json)
 
       if (validationErrors.isEmpty) {
         Right(json.as[A])
-      } else Left {
-        badRequest(
-          errorCode = "400",
-          errorMessage = "Invalid message : Bad Request",
-          source = "Json Validation",
-          detail = validationErrors.map { error =>
-            s"${error.key}: ${error.message}"
-          }
-        )
-      }
+      } else
+        Left {
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Invalid message : Bad Request",
+            source = "Json Validation",
+            detail = validationErrors.map { error =>
+              s"${error.key}: ${error.message}"
+            }
+          )
+        }
     }
-  }
 
-  protected def getTraderProfile(eori: String)(implicit request: Request[_]): EitherT[Future, Result, TraderProfile] = {
+  protected def getTraderProfile(eori: String)(implicit request: Request[_]): EitherT[Future, Result, TraderProfile] =
     EitherT.fromOptionF(
       traderProfilesRepository.get(eori),
       badRequest(
@@ -129,18 +131,23 @@ trait ValidationRules { this: BaseController =>
         )
       )
     )
-  }
 
-  protected def badRequest(errorCode: String, errorMessage: String, source: String, detail: Seq[String])(implicit request: Request[_]): Result = {
+  protected def badRequest(errorCode: String, errorMessage: String, source: String, detail: Seq[String])(implicit
+    request: Request[_]
+  ): Result = {
     val correlationId = request.headers.get("X-Correlation-Id").getOrElse(uuidService.generate())
-    BadRequest(Json.toJson(ErrorResponse(
-      correlationId = correlationId,
-      timestamp = clock.instant(),
-      errorCode = errorCode,
-      errorMessage = errorMessage,
-      source = source,
-      detail = detail
-    ))).withHeaders("X-Correlation-ID" -> correlationId)
+    BadRequest(
+      Json.toJson(
+        ErrorResponse(
+          correlationId = correlationId,
+          timestamp = clock.instant(),
+          errorCode = errorCode,
+          errorMessage = errorMessage,
+          source = source,
+          detail = detail
+        )
+      )
+    ).withHeaders("X-Correlation-ID" -> correlationId)
   }
 }
 
