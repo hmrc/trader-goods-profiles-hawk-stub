@@ -1,0 +1,29 @@
+meta {
+  name: Create Trader Profile
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/tgp/createprofile/v1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "eori": "{{eori}}",
+    "actorId":"{{actorId}}",
+    "ukimsNumber":"{{ukims}}",
+    "nirmsNumber":"{{nirms}}",
+    "niphlNumber": "{{niphl}}"
+  }
+}
+
+vars:pre-request {
+  eori: GB123456789012
+  actorId: GB098765432112
+  ukims: XIUKIM47699357400020231115081800
+  nirms: RMS-GB-123456
+  niphl: 6S123457
+}
