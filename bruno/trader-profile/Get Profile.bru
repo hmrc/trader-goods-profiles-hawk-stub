@@ -1,0 +1,15 @@
+meta {
+  name: Get Profile
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/tgp/getprofile/v1/{{eori}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  eori: GB123456789012
+}

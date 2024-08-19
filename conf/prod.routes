@@ -10,4 +10,6 @@ PUT        /tgp/maintainprofile/v1                uk.gov.hmrc.tradergoodsprofile
 
 PATCH      /test-support/goods-item              uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GoodsItemTestSupportController.patch()
 
+GET        /tgp/getprofile/v1/:eori              uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.GetProfileController.getProfile(eori: String)
+
 ->         /                                      health.Routes

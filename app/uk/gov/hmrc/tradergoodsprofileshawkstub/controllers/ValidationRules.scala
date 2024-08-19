@@ -56,6 +56,9 @@ trait ValidationRules { this: BaseController =>
   protected def validateForwardedHost(implicit request: Request[_]): EitherNec[String, String] =
     request.headers.get("X-Forwarded-Host").toRightNec("error: 005, message: Invalid Header")
 
+  protected def validateAccept(implicit request: Request[_]): EitherNec[String, String] =
+    request.headers.get("Accept").toRightNec("error: 004, message: Invalid Header")
+
   protected def validateDate(implicit request: Request[_]): EitherNec[String, _] =
     request.headers.get("Date").flatMap { dateString =>
       Try(rfc7231Formatter.parse(dateString)).toOption
