@@ -28,7 +28,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.MaintainTraderProfileRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateTraderProfileRequest, MaintainTraderProfileRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository.DuplicateEoriException
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneOffset}
@@ -98,6 +99,33 @@ class TraderProfileRepositorySpec
 
     "must return None when there is no profile for the given eori" in {
       repository.get("eori").futureValue mustBe None
+    }
+  }
+
+  "insert" - {
+
+    val request = CreateTraderProfileRequest(eori = "eori", actorId = "actorId", ukimsNumber = Some("ukims"), nirmsNumber = Some("nirms"), niphlNumber = Some("niphl"))
+
+    "must add a new trader profile" in {
+
+      val expectedProfile = TraderProfile(eori = "eori", actorId = "actorId", ukimsNumber = Some("ukims"), nirmsNumber = Some("nirms"), niphlNumber = Some("niphl"), lastUpdated = clock.instant())
+
+      repository.insert(request).futureValue
+
+      val profiles = repository.collection.find().toFuture().futureValue
+      profiles.size mustBe 1
+      profiles.head mustEqual expectedProfile
+    }
+
+    "must fail if a record already exists with that eori" in {
+
+      val expectedProfile = TraderProfile(eori = "eori", actorId = "actorId", ukimsNumber = Some("ukims"), nirmsNumber = Some("nirms"), niphlNumber = Some("niphl"), lastUpdated = clock.instant())
+
+      repository.insert(request).futureValue
+      val error = repository.insert(request).failed.futureValue
+
+      error mustBe DuplicateEoriException
+      repository.get("eori").futureValue.value mustBe expectedProfile
     }
   }
 }
