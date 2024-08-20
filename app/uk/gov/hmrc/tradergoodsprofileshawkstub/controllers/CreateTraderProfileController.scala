@@ -47,7 +47,8 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateTraderProfi
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
-import java.time.Clock
+import java.time.format.DateTimeFormatter
+import java.time.{Clock, ZoneId}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -66,6 +67,7 @@ class CreateTraderProfileController @Inject() (
 
   private val createProfileSchema: Schema =
     schemaValidationService.createSchema("/schemas/tgp-create-profile-request-v0.1.json").get
+  private val rfc7231Formatter            = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
 
   def createProfile(): Action[RawBuffer] = Action.async(parse.raw) { implicit request =>
     val result = for {
@@ -76,7 +78,7 @@ class CreateTraderProfileController @Inject() (
     } yield Created
       .withHeaders(
         "X-Correlation-ID" -> validatedHeaders.correlationId,
-        "Date"     -> "application/json"
+        "Date"             -> clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
       )
 
     result.merge
