@@ -45,6 +45,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.ValidationRules.Valid
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateTraderProfileRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository.DuplicateEoriException
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
 
 import java.time.format.DateTimeFormatter
@@ -92,19 +93,35 @@ class CreateTraderProfileController @Inject() (
       traderProfilesRepository.insert(body).transform {
         case Success(done) =>
           Success(Right(done))
-        case Failure(_)    =>
-          Success(
-            Left(
-              badRequest(
-                errorCode = "400",
-                errorMessage = "Bad Request",
-                source = "BACKEND",
-                detail = Seq(
-                  "error: 007, message: Invalid Request Parameter"
+        case Failure(e)    =>
+          e match {
+            case DuplicateEoriException =>
+              Success(
+                Left(
+                  badRequest(
+                    errorCode = "400",
+                    errorMessage = "Bad Request",
+                    source = "BACKEND",
+                    detail = Seq(
+                      "error: 038, message: Invalid Request Parameter"
+                    )
+                  )
                 )
               )
-            )
-          )
+            case _                      =>
+              Success(
+                Left(
+                  badRequest(
+                    errorCode = "400",
+                    errorMessage = "Bad Request",
+                    source = "BACKEND",
+                    detail = Seq(
+                      "error: 007, message: Invalid Request Parameter"
+                    )
+                  )
+                )
+              )
+          }
       }
     )
 
