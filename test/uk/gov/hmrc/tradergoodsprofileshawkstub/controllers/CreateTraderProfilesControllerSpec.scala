@@ -36,6 +36,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.ErrorResponse
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateTraderProfileRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository
+import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository.DuplicateEoriException
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
 import java.time.format.DateTimeFormatter
@@ -108,6 +109,42 @@ class CreateTraderProfilesControllerSpec
 
       status(result) mustEqual CREATED
 
+      header("X-Correlation-ID", result).value mustEqual correlationId
+
+      verify(mockRepository).insert(requestBody)
+    }
+
+    "must not create the trader profile and return an error when the eori already exists in the database" in {
+
+      val request = FakeRequest(routes.CreateTraderProfileController.createProfile())
+        .withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
+        )
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 038, message: Invalid Request Parameter"
+        )
+      )
+
+      when(mockRepository.insert(any)).thenReturn(Future.failed(DuplicateEoriException))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
       header("X-Correlation-ID", result).value mustEqual correlationId
 
       verify(mockRepository).insert(requestBody)
