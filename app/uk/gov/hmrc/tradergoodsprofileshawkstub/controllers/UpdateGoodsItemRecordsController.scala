@@ -47,7 +47,6 @@ class UpdateGoodsItemRecordsController @Inject()(
   private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.2.json").get
 
   def updateRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
-
     val result = for {
       _                <- EitherT.fromEither[Future](validateAuthorization)
       _                <- EitherT.fromEither[Future](validateWriteHeaders)
@@ -91,5 +90,52 @@ class UpdateGoodsItemRecordsController @Inject()(
     }
 
     result.leftMap(Future.successful).merge.flatten
+  }
+
+  def updateWholeRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
+    val result = for {
+      _                <- EitherT.fromEither[Future](validateAuthorization)
+      _                <- EitherT.fromEither[Future](validateWriteHeaders)
+      body             <- EitherT.fromEither[Future](validateRequestBody[UpdateGoodsItemRecordRequest](updateRecordSchema))
+      profile          <- getTraderProfile(body.eori)
+    } yield {
+      goodsItemRecordRepository.updateWholeRecord(body).map {
+        _.map { goodsItemRecord =>
+          Ok(goodsItemRecord.toGetRecordResponse(profile, clock.instant()))
+        }.getOrElse {
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 026, message: Invalid Request Parameter")
+          )
+        }
+      }.recover {
+        case DuplicateEoriAndTraderRefException =>
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 010, message: Invalid Request Parameter")
+          )
+        case RecordLockedException =>
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 027, message: Invalid Request")
+          )
+        case RecordInactiveException =>
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 031, message: Invalid Request")
+          )
+      }
+    }
+
+    result.leftMap(Future.successful).merge.flatten
+
   }
 }
