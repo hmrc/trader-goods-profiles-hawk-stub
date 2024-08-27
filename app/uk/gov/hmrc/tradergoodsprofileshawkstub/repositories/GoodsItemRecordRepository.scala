@@ -168,55 +168,6 @@ class GoodsItemRecordRepository @Inject() (
     }
   }
 
-  def updateWholeRecord(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
-    withSessionAndTransaction { session =>
-      checkRecordState(session, request.recordId).flatMap { _ =>
-
-        val goodsItemRecord = GoodsItemRecord(
-          request.recordId,
-          GoodsItem(
-            request.eori,
-            request.actorId,
-            request.traderRef.orNull,
-            request.comcode.orNull,
-            request.goodsDescription.orNull,
-            request.countryOfOrigin.orNull,
-            request.category,
-            request.assessments,
-            request.supplementaryUnit,
-            request.measurementUnit,
-            request.comcodeEffectiveFromDate.orNull,
-            request.comcodeEffectiveToDate
-          ),
-          metadata = GoodsItemMetadata(
-            accreditationStatus = AccreditationStatus.NotRequested,
-            version = 1,
-            active = true,
-            locked = false,
-            toReview = false,
-            reviewReason = None,
-            declarable = None,
-            srcSystemName = "MDTP",
-            createdDateTime = clock.instant(),
-            updatedDateTime = clock.instant()
-          )
-        )
-
-        collection.findOneAndReplace(
-          session,
-          Filters.and(
-            Filters.eq("recordId", request.recordId),
-            Filters.eq("goodsItem.eori", request.eori)
-          ),
-          goodsItemRecord,
-          FindOneAndReplaceOptions().returnDocument(ReturnDocument.AFTER)
-        ).headOption().recoverWith { case e: MongoCommandException if isDuplicateKeyException(e) =>
-          Future.failed(DuplicateEoriAndTraderRefException)
-        }
-      }
-    }
-  }
-
   def patch(request: PatchGoodsItemRequest): Future[Option[Done]] = Mdc.preservingMdc {
 
     val updates = Seq(
