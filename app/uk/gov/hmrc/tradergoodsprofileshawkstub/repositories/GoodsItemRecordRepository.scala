@@ -17,7 +17,7 @@
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
 import org.apache.pekko.Done
-import org.mongodb.scala.model._
+import org.mongodb.scala.model.{FindOneAndUpdateOptions, _}
 import org.mongodb.scala.{ClientSession, MongoCommandException, MongoException, MongoWriteException}
 import play.api.Configuration
 import play.api.libs.json.{Format, Json}

@@ -47,7 +47,6 @@ class UpdateGoodsItemRecordsController @Inject()(
   private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.2.json").get
 
   def updateRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
-
     val result = for {
       _                <- EitherT.fromEither[Future](validateAuthorization)
       _                <- EitherT.fromEither[Future](validateWriteHeaders)

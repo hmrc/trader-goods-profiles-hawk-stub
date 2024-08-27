@@ -616,6 +616,94 @@ class GoodsItemRecordRepositorySpec
     }
   }
 
+  "update whole record" - {
+     "should replace the entire record with the given request" in {
+       val record = generateRecord.copy(
+         metadata = generateRecord.metadata.copy(
+           updatedDateTime = clock.instant().minus(1, ChronoUnit.HOURS),
+           createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
+         )
+       )
+
+       val request = UpdateGoodsItemRecordRequest(
+         recordId = record.recordId,
+         eori = record.goodsItem.eori,
+         actorId = "anotherActorId",
+         traderRef = Some("anotherTraderRef"),
+         comcode = Some("anotherComcode"),
+         goodsDescription = Some("anotherGoodsDescription"),
+         countryOfOrigin = Some("anotherCountryOfOrigin"),
+         category = Some(Category.Excluded),
+         assessments = Some(Seq(
+           Assessment(
+             assessmentId = Some("anotherAssessmentId"),
+             primaryCategory = Some(Category.Standard),
+             condition = Some(
+               Condition(
+                 `type` = Some("anotherType"),
+                 conditionId = Some("anotherConditionId"),
+                 conditionDescription = Some("anotherConditionDescription"),
+                 conditionTraderText = Some("anotherConditionTraderText")
+               )
+             )
+           )
+         )),
+         supplementaryUnit = Some(BigDecimal(3.5)),
+         measurementUnit = Some("anotherMeasurementUnit"),
+         comcodeEffectiveFromDate = Some(record.goodsItem.comcodeEffectiveFromDate.plus(30, ChronoUnit.SECONDS)),
+         comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
+       )
+
+       val expectedResult = GoodsItemRecord(
+         recordId = record.recordId,
+         goodsItem = GoodsItem(
+           eori = "eori",
+           actorId = "anotherActorId",
+           traderRef = "anotherTraderRef",
+           comcode = "anotherComcode",
+           goodsDescription = "anotherGoodsDescription",
+           countryOfOrigin = "anotherCountryOfOrigin",
+           category = Some(Category.Excluded),
+           assessments = Some(Seq(
+             Assessment(
+               assessmentId = Some("anotherAssessmentId"),
+               primaryCategory = Some(Category.Standard),
+               condition = Some(Condition(
+                 `type` = Some("anotherType"),
+                 conditionId = Some("anotherConditionId"),
+                 conditionDescription = Some("anotherConditionDescription"),
+                 conditionTraderText = Some("anotherConditionTraderText")
+               ))
+             )
+           )),
+           supplementaryUnit = Some(BigDecimal(3.5)),
+           measurementUnit = Some("anotherMeasurementUnit"),
+           comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.SECONDS),
+           comcodeEffectiveToDate = Some(clock.instant().plus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.SECONDS))
+         ),
+         metadata = GoodsItemMetadata(
+           accreditationStatus = AccreditationStatus.NotRequested,
+           version = 2,
+           active = true,
+           locked = false,
+           toReview = false,
+           declarable = None,
+           reviewReason = None,
+           srcSystemName = "MDTP",
+           createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS),
+           updatedDateTime = clock.instant()
+         )
+       )
+
+       insert(record).futureValue
+
+       val result = repository.update(request).futureValue.value
+       val value = find(Filters.eq("recordId", record.recordId)).futureValue
+
+       result mustEqual expectedResult
+       value.head mustEqual expectedResult
+     }
+  }
   "patch" - {
 
     "must set properties when they are provided" in {
