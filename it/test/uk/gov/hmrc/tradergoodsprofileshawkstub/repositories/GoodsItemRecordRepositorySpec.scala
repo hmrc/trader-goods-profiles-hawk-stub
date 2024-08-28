@@ -714,7 +714,34 @@ class GoodsItemRecordRepositorySpec
     "must not update when the recordId doesn't match" in {
       val record = generateRecord
 
-      val request = buildRequest(record)
+      val request = UpdateGoodsItemRecordRequest(
+        recordId = s"some-other${record.recordId}",
+        eori = record.goodsItem.eori,
+        actorId = "anotherActorId",
+        traderRef = "anotherTraderRef",
+        comcode = "anotherComcode",
+        goodsDescription = "anotherGoodsDescription",
+        countryOfOrigin = "anotherCountryOfOrigin",
+        category = Some(Category.Excluded),
+        assessments = Some(Seq(
+          Assessment(
+            assessmentId = Some("anotherAssessmentId"),
+            primaryCategory = Some(Category.Standard),
+            condition = Some(
+              Condition(
+                `type` = Some("anotherType"),
+                conditionId = Some("anotherConditionId"),
+                conditionDescription = Some("anotherConditionDescription"),
+                conditionTraderText = Some("anotherConditionTraderText")
+              )
+            )
+          )
+        )),
+        supplementaryUnit = Some(BigDecimal(3.5)),
+        measurementUnit = Some("anotherMeasurementUnit"),
+        comcodeEffectiveFromDate = record.goodsItem.comcodeEffectiveFromDate.plus(30, ChronoUnit.SECONDS),
+        comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
+      )
 
       repository.collection.insertOne(record).toFuture().futureValue
 
@@ -725,7 +752,34 @@ class GoodsItemRecordRepositorySpec
     "must not update when the eori doesn't match" in {
       val record = generateRecord
 
-      val request = buildRequest(record)
+      val request = UpdateGoodsItemRecordRequest(
+        recordId = record.recordId,
+        eori = s"some-other${record.goodsItem.eori}",
+        actorId = "anotherActorId",
+        traderRef = "anotherTraderRef",
+        comcode = "anotherComcode",
+        goodsDescription = "anotherGoodsDescription",
+        countryOfOrigin = "anotherCountryOfOrigin",
+        category = Some(Category.Excluded),
+        assessments = Some(Seq(
+          Assessment(
+            assessmentId = Some("anotherAssessmentId"),
+            primaryCategory = Some(Category.Standard),
+            condition = Some(
+              Condition(
+                `type` = Some("anotherType"),
+                conditionId = Some("anotherConditionId"),
+                conditionDescription = Some("anotherConditionDescription"),
+                conditionTraderText = Some("anotherConditionTraderText")
+              )
+            )
+          )
+        )),
+        supplementaryUnit = Some(BigDecimal(3.5)),
+        measurementUnit = Some("anotherMeasurementUnit"),
+        comcodeEffectiveFromDate = record.goodsItem.comcodeEffectiveFromDate.plus(30, ChronoUnit.SECONDS),
+        comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
+      )
 
       repository.collection.insertOne(record).toFuture().futureValue
 
