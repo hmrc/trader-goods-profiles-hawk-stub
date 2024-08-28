@@ -32,7 +32,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.UpdateGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.PatchGoodsItemRecordRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
@@ -87,7 +87,7 @@ class UpdateGoodsItemRecordsControllerSpec
     val forwardedHost = "forwarded-for"
     val record = generateRecord
 
-    val requestBody = UpdateGoodsItemRecordRequest(
+    val requestBody = PatchGoodsItemRecordRequest(
       recordId = record.recordId,
       eori = record.goodsItem.eori,
       actorId = record.goodsItem.actorId,

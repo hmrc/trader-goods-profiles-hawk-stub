@@ -39,7 +39,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.CreateGoodsItemRecordRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.PatchGoodsItemRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.RemoveGoodsItemRecordRequest
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.UpdateGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.PatchGoodsItemRecordRequest
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.DuplicateEoriAndTraderRefException
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.RecordInactiveException
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.RecordLockedException
@@ -260,7 +260,7 @@ class GoodsItemRecordRepositorySpec
           )
         )
 
-        val request = UpdateGoodsItemRecordRequest(
+        val request = PatchGoodsItemRecordRequest(
           recordId = record.recordId,
           eori = record.goodsItem.eori,
           actorId = "anotherActorId",
@@ -347,7 +347,7 @@ class GoodsItemRecordRepositorySpec
           )
         )
 
-        val request = UpdateGoodsItemRecordRequest(
+        val request = PatchGoodsItemRecordRequest(
           recordId = record.recordId,
           eori = record.goodsItem.eori,
           actorId = "anotherActorId",
@@ -416,7 +416,7 @@ class GoodsItemRecordRepositorySpec
 
         val record = generateRecord
 
-        val request = UpdateGoodsItemRecordRequest(
+        val request = PatchGoodsItemRecordRequest(
           recordId = record.recordId,
           eori = record.goodsItem.eori,
           actorId = "anotherActorId",
@@ -458,7 +458,7 @@ class GoodsItemRecordRepositorySpec
 
         val record = generateRecord.copy(metadata = generateRecord.metadata.copy(locked = true))
 
-        val request = UpdateGoodsItemRecordRequest(
+        val request = PatchGoodsItemRecordRequest(
           recordId = record.recordId,
           eori = record.goodsItem.eori,
           actorId = "anotherActorId",
@@ -499,7 +499,7 @@ class GoodsItemRecordRepositorySpec
 
         val record = generateRecord.copy(metadata = generateRecord.metadata.copy(active = false))
 
-        val request = UpdateGoodsItemRecordRequest(
+        val request = PatchGoodsItemRecordRequest(
           recordId = record.recordId,
           eori = record.goodsItem.eori,
           actorId = "anotherActorId",
@@ -541,7 +541,7 @@ class GoodsItemRecordRepositorySpec
 
       val record = generateRecord
 
-      val request = UpdateGoodsItemRecordRequest(
+      val request = PatchGoodsItemRecordRequest(
         recordId = s"another${record.recordId}",
         eori = record.goodsItem.eori,
         actorId = "anotherActorId",
@@ -580,7 +580,7 @@ class GoodsItemRecordRepositorySpec
 
       val record = generateRecord
 
-      val request = UpdateGoodsItemRecordRequest(
+      val request = PatchGoodsItemRecordRequest(
         recordId = record.recordId,
         eori = s"another${record.goodsItem.eori}",
         actorId = "anotherActorId",
@@ -625,7 +625,7 @@ class GoodsItemRecordRepositorySpec
          )
        )
 
-       val request = UpdateGoodsItemRecordRequest(
+       val request = PatchGoodsItemRecordRequest(
          recordId = record.recordId,
          eori = record.goodsItem.eori,
          actorId = "anotherActorId",

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
 import org.apache.pekko.Done
-import org.mongodb.scala.model.{FindOneAndUpdateOptions, _}
+import org.mongodb.scala.model._
 import org.mongodb.scala.{ClientSession, MongoCommandException, MongoException, MongoWriteException}
 import play.api.Configuration
 import play.api.libs.json.{Format, Json}
@@ -27,7 +27,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mongo.transaction.{TransactionConfiguration, Transactions}
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, PatchGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
@@ -133,7 +133,7 @@ class GoodsItemRecordRepository @Inject() (
     }
   }
 
-  def patchRecord(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
+  def patchRecord(request: PatchGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
     withSessionAndTransaction { session =>
       checkRecordState(session, request.recordId).flatMap { _ =>
 

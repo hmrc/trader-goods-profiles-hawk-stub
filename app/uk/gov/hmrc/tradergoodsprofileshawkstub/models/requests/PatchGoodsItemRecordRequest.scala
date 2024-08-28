@@ -21,7 +21,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{Assessment, Category}
 
 import java.time.Instant
 
-final case class UpdateGoodsItemRecordRequest(
+final case class PatchGoodsItemRecordRequest(
                                                recordId: String,
                                                eori: String,
                                                actorId: String,
@@ -37,7 +37,7 @@ final case class UpdateGoodsItemRecordRequest(
                                                comcodeEffectiveToDate: Option[Instant]
                                              )
 
-object UpdateGoodsItemRecordRequest {
+object PatchGoodsItemRecordRequest {
 
-  implicit lazy val format: OFormat[UpdateGoodsItemRecordRequest] = Json.format
+  implicit lazy val format: OFormat[PatchGoodsItemRecordRequest] = Json.format
 }
