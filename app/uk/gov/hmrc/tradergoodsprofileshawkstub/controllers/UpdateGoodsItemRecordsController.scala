@@ -53,7 +53,7 @@ class UpdateGoodsItemRecordsController @Inject()(
       body             <- EitherT.fromEither[Future](validateRequestBody[UpdateGoodsItemRecordRequest](updateRecordSchema))
       profile          <- getTraderProfile(body.eori)
     } yield {
-      goodsItemRecordRepository.update(body).map {
+      goodsItemRecordRepository.patchRecord(body).map {
         _.map { goodsItemRecord =>
           Ok(goodsItemRecord.toGetRecordResponse(profile, clock.instant()))
         }.getOrElse {

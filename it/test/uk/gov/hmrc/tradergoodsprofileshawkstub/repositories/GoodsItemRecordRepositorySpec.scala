@@ -332,7 +332,7 @@ class GoodsItemRecordRepositorySpec
 
         repository.collection.insertOne(record).toFuture().futureValue
 
-        val result = repository.update(request).futureValue.value
+        val result = repository.patchRecord(request).futureValue.value
 
         result mustEqual expectedResult
         repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual expectedResult
@@ -406,7 +406,7 @@ class GoodsItemRecordRepositorySpec
 
         repository.collection.insertOne(record).toFuture().futureValue
 
-        val result = repository.update(request).futureValue.value
+        val result = repository.patchRecord(request).futureValue.value
 
         result mustEqual expectedResult
         repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual expectedResult
@@ -448,7 +448,7 @@ class GoodsItemRecordRepositorySpec
         repository.collection.insertOne(record).toFuture().futureValue
         repository.collection.insertOne(record.copy(recordId = "recordId2", goodsItem = record.goodsItem.copy(traderRef = "traderRef2"))).toFuture().futureValue
 
-        val result = repository.update(request).failed.futureValue
+        val result = repository.patchRecord(request).failed.futureValue
         result mustBe DuplicateEoriAndTraderRefException
 
         repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
@@ -489,7 +489,7 @@ class GoodsItemRecordRepositorySpec
 
         repository.collection.insertOne(record).toFuture().futureValue
 
-        val result = repository.update(request).failed.futureValue
+        val result = repository.patchRecord(request).failed.futureValue
         result mustBe RecordLockedException
 
         repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
@@ -530,7 +530,7 @@ class GoodsItemRecordRepositorySpec
 
         repository.collection.insertOne(record).toFuture().futureValue
 
-        val result = repository.update(request).failed.futureValue
+        val result = repository.patchRecord(request).failed.futureValue
         result mustBe RecordInactiveException
 
         repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
@@ -572,7 +572,7 @@ class GoodsItemRecordRepositorySpec
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      repository.update(request).futureValue mustBe None
+      repository.patchRecord(request).futureValue mustBe None
       repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
     }
 
@@ -611,7 +611,7 @@ class GoodsItemRecordRepositorySpec
 
       repository.collection.insertOne(record).toFuture().futureValue
 
-      repository.update(request).futureValue mustBe None
+      repository.patchRecord(request).futureValue mustBe None
       repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
     }
   }
@@ -697,7 +697,7 @@ class GoodsItemRecordRepositorySpec
 
        insert(record).futureValue
 
-       val result = repository.update(request).futureValue.value
+       val result = repository.patchRecord(request).futureValue.value
        val value = find(Filters.eq("recordId", record.recordId)).futureValue
 
        result mustEqual expectedResult

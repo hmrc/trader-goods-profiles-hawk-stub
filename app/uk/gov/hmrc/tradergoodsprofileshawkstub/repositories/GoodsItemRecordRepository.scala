@@ -133,7 +133,7 @@ class GoodsItemRecordRepository @Inject() (
     }
   }
 
-  def update(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
+  def patchRecord(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
     withSessionAndTransaction { session =>
       checkRecordState(session, request.recordId).flatMap { _ =>
 

@@ -125,7 +125,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.successful(Some(record)))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.successful(Some(record)))
 
       val result = route(app, request).value
 
@@ -138,7 +138,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
     }
 
     "must not update a record and return an error when the record does not exist in the database" in {
@@ -154,7 +154,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.successful(None))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
 
@@ -178,7 +178,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
     }
 
     "must not update a record and return an error when there is no profile matching the eori" in {
@@ -217,7 +217,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when the updated traderRef is not unique within the database" in {
@@ -233,7 +233,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
 
       val result = route(app, request).value
 
@@ -257,7 +257,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
     }
 
     "must not update a record and return an error when the record is inactive" in {
@@ -273,7 +273,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(RecordInactiveException))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.failed(RecordInactiveException))
 
       val result = route(app, request).value
 
@@ -297,7 +297,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
     }
 
     "must not update a record and return an error when the record is locked" in {
@@ -313,7 +313,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(RecordLockedException))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.failed(RecordLockedException))
 
       val result = route(app, request).value
 
@@ -337,7 +337,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
     }
 
     "must not update a record and return an error when there is no correlation-id header" in {
@@ -374,7 +374,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, times(1)).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when there is no forwarded-host header" in {
@@ -411,7 +411,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when there is no date header" in {
@@ -448,7 +448,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when there is an invalid date header" in {
@@ -486,7 +486,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when there is no content-type header" in {
@@ -523,7 +523,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when there is an invalid content-type header" in {
@@ -561,7 +561,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when the request body can't be parsed as json" in {
@@ -599,7 +599,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when there are json schema violations" in {
@@ -643,7 +643,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return forbidden with no body when there is no authorization header" in {
@@ -665,7 +665,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return forbidden with no body when there is an invalid authorization header" in {
@@ -688,7 +688,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
   }
 
