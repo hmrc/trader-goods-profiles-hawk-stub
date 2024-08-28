@@ -20,10 +20,10 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mongodb.scala.model.Filters
 import org.scalactic.source.Position
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import org.slf4j.MDC
@@ -34,12 +34,12 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.play.bootstrap.dispatchers.MDCPropagatingExecutorService
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
-import java.time.{Clock, Instant, ZoneOffset}
 import java.time.temporal.ChronoUnit
+import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
@@ -607,6 +607,37 @@ class GoodsItemRecordRepositorySpec
   }
 
   "update whole record" - {
+    def buildRequest(record: GoodsItemRecord) = {
+      UpdateGoodsItemRecordRequest(
+        recordId = record.recordId,
+        eori = record.goodsItem.eori,
+        actorId = "anotherActorId",
+        traderRef = "anotherTraderRef",
+        comcode = "anotherComcode",
+        goodsDescription = "anotherGoodsDescription",
+        countryOfOrigin = "anotherCountryOfOrigin",
+        category = Some(Category.Excluded),
+        assessments = Some(Seq(
+          Assessment(
+            assessmentId = Some("anotherAssessmentId"),
+            primaryCategory = Some(Category.Standard),
+            condition = Some(
+              Condition(
+                `type` = Some("anotherType"),
+                conditionId = Some("anotherConditionId"),
+                conditionDescription = Some("anotherConditionDescription"),
+                conditionTraderText = Some("anotherConditionTraderText")
+              )
+            )
+          )
+        )),
+        supplementaryUnit = Some(BigDecimal(3.5)),
+        measurementUnit = Some("anotherMeasurementUnit"),
+        comcodeEffectiveFromDate = record.goodsItem.comcodeEffectiveFromDate.plus(30, ChronoUnit.SECONDS),
+        comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
+      )
+    }
+
      "should replace the entire record with the given request" in {
        val record = generateRecord.copy(
          metadata = generateRecord.metadata.copy(
@@ -615,34 +646,7 @@ class GoodsItemRecordRepositorySpec
          )
        )
 
-       val request = UpdateGoodsItemRecordRequest(
-         recordId = record.recordId,
-         eori = record.goodsItem.eori,
-         actorId = "anotherActorId",
-         traderRef = "anotherTraderRef",
-         comcode = "anotherComcode",
-         goodsDescription = "anotherGoodsDescription",
-         countryOfOrigin = "anotherCountryOfOrigin",
-         category = Some(Category.Excluded),
-         assessments = Some(Seq(
-           Assessment(
-             assessmentId = Some("anotherAssessmentId"),
-             primaryCategory = Some(Category.Standard),
-             condition = Some(
-               Condition(
-                 `type` = Some("anotherType"),
-                 conditionId = Some("anotherConditionId"),
-                 conditionDescription = Some("anotherConditionDescription"),
-                 conditionTraderText = Some("anotherConditionTraderText")
-               )
-             )
-           )
-         )),
-         supplementaryUnit = Some(BigDecimal(3.5)),
-         measurementUnit = Some("anotherMeasurementUnit"),
-         comcodeEffectiveFromDate = record.goodsItem.comcodeEffectiveFromDate.plus(30, ChronoUnit.SECONDS),
-         comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
-       )
+       val request = buildRequest(record)
 
        val expectedResult = GoodsItemRecord(
          recordId = record.recordId,
@@ -693,6 +697,41 @@ class GoodsItemRecordRepositorySpec
        result mustEqual expectedResult
        value.head mustEqual expectedResult
      }
+
+    "must fail when the record is locked" in {
+      val record = generateRecord.copy(metadata = generateRecord.metadata.copy(locked = true))
+
+      val request = buildRequest(record)
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      val result = repository.updateRecord(request).failed.futureValue
+      result mustBe RecordLockedException
+
+      repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+    }
+
+    "must not update when the recordId doesn't match" in {
+      val record = generateRecord
+
+      val request = buildRequest(record)
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      repository.updateRecord(request).futureValue mustBe None
+      repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+    }
+
+    "must not update when the eori doesn't match" in {
+      val record = generateRecord
+
+      val request = buildRequest(record)
+
+      repository.collection.insertOne(record).toFuture().futureValue
+
+      repository.updateRecord(request).futureValue mustBe None
+      repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+    }
   }
 
   "patch" - {
