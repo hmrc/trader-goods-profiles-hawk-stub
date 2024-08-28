@@ -22,7 +22,7 @@ import play.api.Configuration
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.actions.HeaderPropagationFilter
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.PatchGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{PatchGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.{SchemaValidationService, UuidService}
@@ -96,10 +96,10 @@ class UpdateGoodsItemRecordsController @Inject()(
     val result = for {
       _                <- EitherT.fromEither[Future](validateAuthorization)
       _                <- EitherT.fromEither[Future](validateWriteHeaders)
-      body             <- EitherT.fromEither[Future](validateRequestBody[PatchGoodsItemRecordRequest](updateRecordSchema))
+      body             <- EitherT.fromEither[Future](validateRequestBody[UpdateGoodsItemRecordRequest](updateRecordSchema))
       profile          <- getTraderProfile(body.eori)
     } yield {
-      goodsItemRecordRepository.patchRecord(body).map {
+      goodsItemRecordRepository.updateRecord(body).map {
         _.map { goodsItemRecord =>
           Ok(goodsItemRecord.toGetRecordResponse(profile, clock.instant()))
         }.getOrElse {

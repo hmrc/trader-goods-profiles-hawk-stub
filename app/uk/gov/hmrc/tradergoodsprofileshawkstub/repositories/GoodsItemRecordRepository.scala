@@ -27,7 +27,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mongo.transaction.{TransactionConfiguration, Transactions}
 import uk.gov.hmrc.play.http.logging.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, PatchGoodsItemRecordRequest}
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
@@ -148,6 +148,41 @@ class GoodsItemRecordRepository @Inject() (
           request.supplementaryUnit.map(Updates.set("goodsItem.supplementaryUnit", _)),
           request.measurementUnit.map(Updates.set("goodsItem.measurementUnit", _)),
           request.comcodeEffectiveFromDate.map(Updates.set("goodsItem.comcodeEffectiveFromDate", _)),
+          request.comcodeEffectiveToDate.map(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
+          Some(Updates.set("metadata.updatedDateTime", clock.instant())),
+          Some(Updates.inc("metadata.version", 1))
+        ).flatten
+
+        collection.findOneAndUpdate(
+          session,
+          Filters.and(
+            Filters.eq("recordId", request.recordId),
+            Filters.eq("goodsItem.eori", request.eori)
+          ),
+          Updates.combine(updates: _*),
+          FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+        ).headOption().recoverWith { case e: MongoCommandException if isDuplicateKeyException(e) =>
+          Future.failed(DuplicateEoriAndTraderRefException)
+        }
+      }
+    }
+  }
+
+  def updateRecord(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
+    withSessionAndTransaction { session =>
+      checkRecordState(session, request.recordId).flatMap { _ =>
+
+        val updates = Seq(
+          Some(Updates.set("goodsItem.actorId", request.actorId)),
+          Some(Updates.set("goodsItem.traderRef", request.traderRef)),
+          Some(Updates.set("goodsItem.comcode", request.comcode)),
+          Some(Updates.set("goodsItem.goodsDescription", request.goodsDescription)),
+          Some(Updates.set("goodsItem.countryOfOrigin", request.countryOfOrigin)),
+          request.category.map(Updates.set("goodsItem.category", _)),
+          request.assessments.map(Updates.set("goodsItem.assessments", _)),
+          request.supplementaryUnit.map(Updates.set("goodsItem.supplementaryUnit", _)),
+          request.measurementUnit.map(Updates.set("goodsItem.measurementUnit", _)),
+          Some(Updates.set("goodsItem.comcodeEffectiveToDate", request.comcodeEffectiveFromDate)),
           request.comcodeEffectiveToDate.map(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
           Some(Updates.set("metadata.updatedDateTime", clock.instant())),
           Some(Updates.inc("metadata.version", 1))
