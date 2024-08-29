@@ -21,23 +21,23 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{Assessment, Category}
 
 import java.time.Instant
 
-final case class UpdateGoodsItemRecordRequest(
+final case class PatchGoodsItemRecordRequest(
+                                               recordId: String,
                                                eori: String,
                                                actorId: String,
-                                               recordId: String,
-                                               traderRef: String,
-                                               comcode: String,
-                                               goodsDescription: String,
-                                               countryOfOrigin: String,
+                                               traderRef: Option[String],
+                                               comcode: Option[String],
+                                               goodsDescription: Option[String],
+                                               countryOfOrigin: Option[String],
                                                category: Option[Category],
                                                assessments: Option[Seq[Assessment]],
                                                supplementaryUnit: Option[BigDecimal],
                                                measurementUnit: Option[String],
-                                               comcodeEffectiveFromDate: Instant,
+                                               comcodeEffectiveFromDate: Option[Instant],
                                                comcodeEffectiveToDate: Option[Instant]
                                              )
 
-object UpdateGoodsItemRecordRequest {
+object PatchGoodsItemRecordRequest {
 
-  implicit lazy val format: OFormat[UpdateGoodsItemRecordRequest] = Json.format
+  implicit lazy val format: OFormat[PatchGoodsItemRecordRequest] = Json.format
 }

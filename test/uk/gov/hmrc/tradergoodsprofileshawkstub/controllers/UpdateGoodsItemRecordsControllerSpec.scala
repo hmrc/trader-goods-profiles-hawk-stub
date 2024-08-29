@@ -32,7 +32,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.UpdateGoodsItemRecordRequest
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{PatchGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
@@ -81,13 +81,13 @@ class UpdateGoodsItemRecordsControllerSpec
     Mockito.reset[Any](mockGoodsItemRepository, mockUuidService, mockTraderProfilesRepository)
   }
 
-  "updateRecord" - {
+  "patchRecord" - {
 
     val correlationId = UUID.randomUUID().toString
     val forwardedHost = "forwarded-for"
     val record = generateRecord
 
-    val requestBody = UpdateGoodsItemRecordRequest(
+    val requestBody = PatchGoodsItemRecordRequest(
       recordId = record.recordId,
       eori = record.goodsItem.eori,
       actorId = record.goodsItem.actorId,
@@ -114,7 +114,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must update a record and return the relevant response when given a valid request" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -125,7 +125,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.successful(Some(record)))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.successful(Some(record)))
 
       val result = route(app, request).value
 
@@ -138,12 +138,12 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
     }
 
     "must not update a record and return an error when the record does not exist in the database" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -154,7 +154,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.successful(None))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
 
@@ -178,7 +178,617 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
+    }
+
+    "must not update a record and return an error when there is no profile matching the eori" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(None))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 007, message: Invalid Request Parameter"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return an error when the updated traderRef is not unique within the database" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 010, message: Invalid Request Parameter"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
+    }
+
+    "must not update a record and return an error when the record is inactive" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.failed(RecordInactiveException))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 031, message: Invalid Request"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
+    }
+
+    "must not update a record and return an error when the record is locked" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
+      when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.failed(RecordLockedException))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 027, message: Invalid Request"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
+      verify(mockGoodsItemRepository).patchRecord(requestBody)
+    }
+
+    "must not update a record and return an error when there is no correlation-id header" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 001, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, times(1)).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return an error when there is no forwarded-host header" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 005, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result) mustBe empty
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return an error when there is no date header" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 002, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return an error when there is an invalid date header" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Date" -> "invalid",
+          "Accept" -> "application/json",
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 002, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return an error when there is no content-type header" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 003, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return an error when there is an invalid content-type header" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "text/xml",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 003, message: Invalid Header"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return an error when the request body can't be parsed as json" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody("{")
+        .withHeaders(
+          "Content-Type" -> "application/json",
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      // Unsure if this is the correct response as it's not documented
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Invalid message : Bad Request",
+        source = "Json Validation",
+        detail = Seq.empty
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return an error when there are json schema violations" in {
+
+      val invalidRequestBody = requestBody.copy(
+        eori = "eori12345678901234567890",
+        actorId = "actorId12345678901234567890"
+      )
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(invalidRequestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Invalid message : Bad Request",
+        source = "Json Validation",
+        detail = Seq(
+          "$.eori: expected maxLength: 17, actual: 24",
+          "$.actorId: expected maxLength: 17, actual: 27"
+        )
+      )
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return forbidden with no body when there is no authorization header" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "text/xml",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual FORBIDDEN
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+
+    "must not update a record and return forbidden with no body when there is an invalid authorization header" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord())
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "text/xml",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-other-token"
+        )
+
+      when(mockUuidService.generate()).thenReturn(correlationId)
+
+      val result = route(app, request).value
+
+      status(result) mustEqual FORBIDDEN
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository, never).get(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
+    }
+  }
+
+  "updateRecord" - {
+    val correlationId = UUID.randomUUID().toString
+    val forwardedHost = "forwarded-for"
+    val record = generateRecord
+
+    val requestBody = UpdateGoodsItemRecordRequest(
+      recordId = record.recordId,
+      eori = record.goodsItem.eori,
+      actorId = record.goodsItem.actorId,
+      traderRef = record.goodsItem.traderRef,
+      comcode = record.goodsItem.comcode,
+      goodsDescription = record.goodsItem.goodsDescription,
+      countryOfOrigin = record.goodsItem.countryOfOrigin,
+      category = record.goodsItem.category,
+      assessments = record.goodsItem.assessments,
+      supplementaryUnit = record.goodsItem.supplementaryUnit,
+      measurementUnit = record.goodsItem.measurementUnit,
+      comcodeEffectiveFromDate = record.goodsItem.comcodeEffectiveFromDate,
+      comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate
+    )
+
+    val profile = TraderProfile(
+      eori = requestBody.eori,
+      actorId = requestBody.actorId,
+      nirmsNumber = None,
+      niphlNumber = None,
+      ukimsNumber = None,
+      lastUpdated = clock.instant()
+    )
+
+    "must update a record and return the relevant response when given a valid request" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
+      when(mockGoodsItemRepository.updateRecord(any)).thenReturn(Future.successful(Some(record)))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+
+      contentAsJson(result) mustEqual record.toGetRecordResponse(profile, clock.instant())
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
+      verify(mockGoodsItemRepository).updateRecord(requestBody)
+    }
+
+    "must not update a record and return an error when the record does not exist in the database" in {
+
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+        .withHeaders(
+          "X-Correlation-ID" -> correlationId,
+          "X-Forwarded-Host" -> forwardedHost,
+          "Content-Type" -> "application/json",
+          "Accept" -> "application/json",
+          "Date" -> formattedDate,
+          "Authorization" -> "some-token"
+        )
+
+      when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
+      when(mockGoodsItemRepository.updateRecord(any)).thenReturn(Future.successful(None))
+
+      val result = route(app, request).value
+
+      status(result) mustEqual BAD_REQUEST
+
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 026, message: Invalid Request Parameter"
+        )
+      )
+
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
+      header("X-Correlation-ID", result).value mustEqual correlationId
+      header("X-Forwarded-Host", result).value mustEqual forwardedHost
+      header("Content-Type", result).value mustEqual "application/json"
+
+      verify(mockUuidService, never).generate()
+      verify(mockTraderProfilesRepository).get(requestBody.eori)
+      verify(mockGoodsItemRepository).updateRecord(requestBody)
     }
 
     "must not update a record and return an error when there is no profile matching the eori" in {
@@ -217,7 +827,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return an error when the updated traderRef is not unique within the database" in {
@@ -233,7 +843,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
+      when(mockGoodsItemRepository.updateRecord(any)).thenReturn(Future.failed(DuplicateEoriAndTraderRefException))
 
       val result = route(app, request).value
 
@@ -257,7 +867,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).updateRecord(requestBody)
     }
 
     "must not update a record and return an error when the record is inactive" in {
@@ -273,7 +883,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(RecordInactiveException))
+      when(mockGoodsItemRepository.updateRecord(any)).thenReturn(Future.failed(RecordInactiveException))
 
       val result = route(app, request).value
 
@@ -297,7 +907,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).updateRecord(requestBody)
     }
 
     "must not update a record and return an error when the record is locked" in {
@@ -313,7 +923,7 @@ class UpdateGoodsItemRecordsControllerSpec
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.update(any)).thenReturn(Future.failed(RecordLockedException))
+      when(mockGoodsItemRepository.updateRecord(any)).thenReturn(Future.failed(RecordLockedException))
 
       val result = route(app, request).value
 
@@ -337,7 +947,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).update(requestBody)
+      verify(mockGoodsItemRepository).updateRecord(requestBody)
     }
 
     "must not update a record and return an error when there is no correlation-id header" in {
@@ -374,7 +984,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, times(1)).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return an error when there is no forwarded-host header" in {
@@ -411,7 +1021,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return an error when there is no date header" in {
@@ -448,7 +1058,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return an error when there is an invalid date header" in {
@@ -486,7 +1096,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return an error when there is no content-type header" in {
@@ -523,7 +1133,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return an error when there is an invalid content-type header" in {
@@ -561,7 +1171,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return an error when the request body can't be parsed as json" in {
@@ -599,7 +1209,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return an error when there are json schema violations" in {
@@ -643,7 +1253,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return forbidden with no body when there is no authorization header" in {
@@ -665,7 +1275,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
     "must not update a record and return forbidden with no body when there is an invalid authorization header" in {
@@ -688,7 +1298,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).updateRecord(any)
     }
   }
 

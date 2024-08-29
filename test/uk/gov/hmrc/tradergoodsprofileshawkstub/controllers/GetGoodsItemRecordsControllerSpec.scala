@@ -197,7 +197,7 @@ class GetGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(profile.eori)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must return an error when there is no correlation-id header" in {
@@ -642,7 +642,7 @@ class GetGoodsItemRecordsControllerSpec
 
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository).get(profile.eori)
-      verify(mockGoodsItemRepository, never).update(any)
+      verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must return an error when page is invalid" in {
