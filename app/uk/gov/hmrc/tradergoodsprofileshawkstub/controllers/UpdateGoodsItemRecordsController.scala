@@ -44,13 +44,14 @@ class UpdateGoodsItemRecordsController @Inject()(
                                           )(implicit override val ec: ExecutionContext) extends BackendBaseController with ValidationRules {
 
   // Using `get` here as we want to throw an exception on startup if this can't be found
-  private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.2.json").get
+  private val patchRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-patch-record-request-v0.1.json").get
+  private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.7.json").get
 
   def patchRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
     val result = for {
       _                <- EitherT.fromEither[Future](validateAuthorization)
       _                <- EitherT.fromEither[Future](validateWriteHeaders)
-      body             <- EitherT.fromEither[Future](validateRequestBody[PatchGoodsItemRecordRequest](updateRecordSchema))
+      body             <- EitherT.fromEither[Future](validateRequestBody[PatchGoodsItemRecordRequest](patchRecordSchema))
       profile          <- getTraderProfile(body.eori)
     } yield {
       goodsItemRecordRepository.patchRecord(body).map {
