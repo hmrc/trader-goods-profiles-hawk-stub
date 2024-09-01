@@ -672,7 +672,7 @@ class GoodsItemRecordRepositorySpec
            )),
            supplementaryUnit = Some(BigDecimal(3.5)),
            measurementUnit = Some("anotherMeasurementUnit"),
-           comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
+           comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.SECONDS),
            comcodeEffectiveToDate = Some(clock.instant().plus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.SECONDS))
          ),
          metadata = GoodsItemMetadata(
