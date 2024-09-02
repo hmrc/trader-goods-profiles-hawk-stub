@@ -182,7 +182,7 @@ class GoodsItemRecordRepository @Inject() (
           request.assessments.map(Updates.set("goodsItem.assessments", _)),
           request.supplementaryUnit.map(Updates.set("goodsItem.supplementaryUnit", _)),
           request.measurementUnit.map(Updates.set("goodsItem.measurementUnit", _)),
-          Some(Updates.set("goodsItem.comcodeEffectiveToDate", request.comcodeEffectiveFromDate)),
+          Some(Updates.set("goodsItem.comcodeEffectiveFromDate", request.comcodeEffectiveFromDate)),
           request.comcodeEffectiveToDate.map(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
           Some(Updates.set("metadata.updatedDateTime", clock.instant())),
           Some(Updates.inc("metadata.version", 1))
