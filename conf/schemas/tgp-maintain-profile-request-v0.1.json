@@ -31,7 +31,7 @@
     "niphlNumber": {
       "description": "Northern Ireland Plant Health Label scheme registration number",
       "type": "string",
-      "minLength": 8,
+      "minLength": 1,
       "maxLength": 8
     }
   },
