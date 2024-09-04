@@ -173,20 +173,20 @@ class GoodsItemRecordRepository @Inject() (
       checkRecordState(session, request.recordId).flatMap { _ =>
 
         val updates = Seq(
-          Some(Updates.set("goodsItem.actorId", request.actorId)),
-          Some(Updates.set("goodsItem.traderRef", request.traderRef)),
-          Some(Updates.set("goodsItem.comcode", request.comcode)),
-          Some(Updates.set("goodsItem.goodsDescription", request.goodsDescription)),
-          Some(Updates.set("goodsItem.countryOfOrigin", request.countryOfOrigin)),
-          request.category.map(Updates.set("goodsItem.category", _)),
-          request.assessments.map(Updates.set("goodsItem.assessments", _)),
-          request.supplementaryUnit.map(Updates.set("goodsItem.supplementaryUnit", _)),
-          request.measurementUnit.map(Updates.set("goodsItem.measurementUnit", _)),
-          Some(Updates.set("goodsItem.comcodeEffectiveFromDate", request.comcodeEffectiveFromDate)),
-          request.comcodeEffectiveToDate.map(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
-          Some(Updates.set("metadata.updatedDateTime", clock.instant())),
-          Some(Updates.inc("metadata.version", 1))
-        ).flatten
+          Updates.set("goodsItem.actorId", request.actorId),
+          Updates.set("goodsItem.traderRef", request.traderRef),
+          Updates.set("goodsItem.comcode", request.comcode),
+          Updates.set("goodsItem.goodsDescription", request.goodsDescription),
+          Updates.set("goodsItem.countryOfOrigin", request.countryOfOrigin),
+          request.category.fold(Updates.unset("goodsItem.category"))(Updates.set("goodsItem.category", _)),
+          request.assessments.fold(Updates.unset("goodsItem.assessments"))(Updates.set("goodsItem.assessments", _)),
+          request.supplementaryUnit.fold(Updates.unset("goodsItem.supplementaryUnit"))(Updates.set("goodsItem.supplementaryUnit", _)),
+          request.measurementUnit.fold(Updates.unset("goodsItem.measurementUnit"))(Updates.set("goodsItem.measurementUnit", _)),
+          Updates.set("goodsItem.comcodeEffectiveFromDate", request.comcodeEffectiveFromDate),
+          request.comcodeEffectiveToDate.fold(Updates.unset("goodsItem.comcodeEffectiveToDate"))(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
+          Updates.set("metadata.updatedDateTime", clock.instant()),
+          Updates.inc("metadata.version", 1)
+        )
 
         collection.findOneAndUpdate(
           session,
