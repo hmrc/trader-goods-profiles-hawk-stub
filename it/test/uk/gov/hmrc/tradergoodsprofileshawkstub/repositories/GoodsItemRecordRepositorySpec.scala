@@ -743,10 +743,10 @@ class GoodsItemRecordRepositorySpec
         comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
       )
 
-      repository.collection.insertOne(record).toFuture().futureValue
+      insert(record).futureValue
 
       repository.updateRecord(request).futureValue mustBe None
-      repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+      find(Filters.eq("recordId", record.recordId)).futureValue.head mustEqual record
     }
 
     "must not update when the eori doesn't match" in {
@@ -781,10 +781,66 @@ class GoodsItemRecordRepositorySpec
         comcodeEffectiveToDate = record.goodsItem.comcodeEffectiveToDate.map(_.plus(30, ChronoUnit.SECONDS))
       )
 
-      repository.collection.insertOne(record).toFuture().futureValue
+      insert(record).futureValue
 
       repository.updateRecord(request).futureValue mustBe None
-      repository.collection.find(Filters.eq("recordId", record.recordId)).head().futureValue mustEqual record
+      find(Filters.eq("recordId", record.recordId)).futureValue.head mustEqual record
+    }
+
+    "should Update optional field" in {
+      val record = generateRecord.copy(
+        metadata = generateRecord.metadata.copy(
+          updatedDateTime = clock.instant().minus(1, ChronoUnit.HOURS),
+          createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
+        )
+      )
+
+      val request = buildRequest(record).copy(
+        assessments = None,
+        category = None,
+        supplementaryUnit = None,
+        measurementUnit = None,
+        comcodeEffectiveToDate = None
+      )
+
+
+      val expectedResult = GoodsItemRecord(
+        recordId = record.recordId,
+        goodsItem = GoodsItem(
+          eori = "eori",
+          actorId = "anotherActorId",
+          traderRef = "anotherTraderRef",
+          comcode = "anotherComcode",
+          goodsDescription = "anotherGoodsDescription",
+          countryOfOrigin = "anotherCountryOfOrigin",
+          category = None,
+          assessments = None,
+          supplementaryUnit = None,
+          measurementUnit = None,
+          comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).plus(30, ChronoUnit.SECONDS),
+          comcodeEffectiveToDate = None
+        ),
+        metadata = GoodsItemMetadata(
+          accreditationStatus = AccreditationStatus.NotRequested,
+          version = 2,
+          active = true,
+          locked = false,
+          toReview = false,
+          declarable = None,
+          reviewReason = None,
+          srcSystemName = "MDTP",
+          createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS),
+          updatedDateTime = clock.instant()
+        )
+      )
+
+      insert(record).futureValue
+
+      val result = repository.updateRecord(request).futureValue.value
+      val value = find(Filters.eq("recordId", record.recordId)).futureValue
+
+      result mustEqual expectedResult
+      value.head mustEqual expectedResult
     }
   }
 
