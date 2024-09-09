@@ -118,6 +118,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must update a record and return the relevant response when given a valid request" in {
       when(appConfig.isPatchMethodEnabled).thenReturn(true)
+
       val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
