@@ -33,7 +33,6 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.play.bootstrap.dispatchers.MDCPropagatingExecutorService
-import uk.gov.hmrc.tradergoodsprofileshawkstub.config.AppConfig
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
@@ -58,7 +57,6 @@ class GoodsItemRecordRepositorySpec
 
   private val clock: Clock = Clock.fixed(Instant.now().truncatedTo(ChronoUnit.MILLIS), ZoneOffset.UTC)
   private val mockUuidService: UuidService = mock[UuidService]
-  private val appConfig: AppConfig = mock[AppConfig]
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .configure(
@@ -67,15 +65,13 @@ class GoodsItemRecordRepositorySpec
     .overrides(
       bind[MongoComponent].toInstance(mongoComponent),
       bind[Clock].toInstance(clock),
-      bind[UuidService].toInstance(mockUuidService),
-      bind[AppConfig].toInstance(appConfig)
+      bind[UuidService].toInstance(mockUuidService)
     )
     .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
     Mockito.reset(mockUuidService)
-    when(appConfig.isPatchMethodEnabled).thenReturn(true)
   }
 
   override protected lazy val repository: GoodsItemRecordRepository =
