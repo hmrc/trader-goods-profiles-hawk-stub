@@ -21,7 +21,9 @@ import org.everit.json.schema.Schema
 import play.api.Configuration
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
+import uk.gov.hmrc.tradergoodsprofileshawkstub.config.AppConfig
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.actions.HeaderPropagationFilter
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{PatchGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}
@@ -39,6 +41,7 @@ class UpdateGoodsItemRecordsController @Inject()(
                                             override val clock: Clock,
                                             override val configuration: Configuration,
                                             override val schemaValidationService: SchemaValidationService,
+                                             val appConfig: AppConfig,
                                             goodsItemRecordRepository: GoodsItemRecordRepository,
                                             headersFilter: HeaderPropagationFilter
                                           )(implicit override val ec: ExecutionContext) extends BackendBaseController with ValidationRules {
@@ -48,49 +51,55 @@ class UpdateGoodsItemRecordsController @Inject()(
   private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.7.json").get
 
   def patchRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
-    val result = for {
-      _                <- EitherT.fromEither[Future](validateAuthorization)
-      _                <- EitherT.fromEither[Future](validateWriteHeaders)
-      body             <- EitherT.fromEither[Future](validateRequestBody[PatchGoodsItemRecordRequest](patchRecordSchema))
-      profile          <- getTraderProfile(body.eori)
-    } yield {
-      goodsItemRecordRepository.patchRecord(body).map {
-        _.map { goodsItemRecord =>
-          Ok(goodsItemRecord.toGetRecordResponse(profile, clock.instant()))
-        }.getOrElse {
-          badRequest(
-            errorCode = "400",
-            errorMessage = "Bad Request",
-            source = "BACKEND",
-            detail = Seq("error: 026, message: Invalid Request Parameter")
-          )
+    //Todo: remove this flag when EIS has implemented the PATCH method - TGP-2417.
+    // isPatchMethodEnabled is false as default
+    if(appConfig.isPatchMethodEnabled) {
+      val result = for {
+        _ <- EitherT.fromEither[Future](validateAuthorization)
+        _ <- EitherT.fromEither[Future](validateWriteHeaders)
+        body <- EitherT.fromEither[Future](validateRequestBody[PatchGoodsItemRecordRequest](patchRecordSchema))
+        profile <- getTraderProfile(body.eori)
+      } yield {
+        goodsItemRecordRepository.patchRecord(body).map {
+          _.map { goodsItemRecord =>
+            Ok(goodsItemRecord.toGetRecordResponse(profile, clock.instant()))
+          }.getOrElse {
+            badRequest(
+              errorCode = "400",
+              errorMessage = "Bad Request",
+              source = "BACKEND",
+              detail = Seq("error: 026, message: Invalid Request Parameter")
+            )
+          }
+        }.recover {
+          case DuplicateEoriAndTraderRefException =>
+            badRequest(
+              errorCode = "400",
+              errorMessage = "Bad Request",
+              source = "BACKEND",
+              detail = Seq("error: 010, message: Invalid Request Parameter")
+            )
+          case RecordLockedException =>
+            badRequest(
+              errorCode = "400",
+              errorMessage = "Bad Request",
+              source = "BACKEND",
+              detail = Seq("error: 027, message: Invalid Request")
+            )
+          case RecordInactiveException =>
+            badRequest(
+              errorCode = "400",
+              errorMessage = "Bad Request",
+              source = "BACKEND",
+              detail = Seq("error: 031, message: Invalid Request")
+            )
         }
-      }.recover {
-        case DuplicateEoriAndTraderRefException =>
-          badRequest(
-            errorCode = "400",
-            errorMessage = "Bad Request",
-            source = "BACKEND",
-            detail = Seq("error: 010, message: Invalid Request Parameter")
-          )
-        case RecordLockedException =>
-          badRequest(
-            errorCode = "400",
-            errorMessage = "Bad Request",
-            source = "BACKEND",
-            detail = Seq("error: 027, message: Invalid Request")
-          )
-        case RecordInactiveException =>
-          badRequest(
-            errorCode = "400",
-            errorMessage = "Bad Request",
-            source = "BACKEND",
-            detail = Seq("error: 031, message: Invalid Request")
-          )
-      }
-    }
 
-    result.leftMap(Future.successful).merge.flatten
+      }
+
+      result.leftMap(Future.successful).merge.flatten
+    }
+    else updateRecord() (request)
   }
 
   def updateRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
@@ -139,3 +148,5 @@ class UpdateGoodsItemRecordsController @Inject()(
     result.leftMap(Future.successful).merge.flatten
   }
 }
+
+
