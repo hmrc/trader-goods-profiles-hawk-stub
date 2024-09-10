@@ -1346,4 +1346,5 @@ class UpdateGoodsItemRecordsControllerSpec
       createdDateTime = clock.instant().minus(1, ChronoUnit.HOURS)
     )
   )
+
 }
