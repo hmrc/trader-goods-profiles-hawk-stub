@@ -21,6 +21,7 @@ import org.everit.json.schema.Schema
 import play.api.Configuration
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
+import uk.gov.hmrc.tradergoodsprofileshawkstub.config.AppConfig
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.actions.HeaderPropagationFilter
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{PatchGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
@@ -39,6 +40,7 @@ class UpdateGoodsItemRecordsController @Inject()(
                                             override val clock: Clock,
                                             override val configuration: Configuration,
                                             override val schemaValidationService: SchemaValidationService,
+                                            val appConfig: AppConfig,
                                             goodsItemRecordRepository: GoodsItemRecordRepository,
                                             headersFilter: HeaderPropagationFilter
                                           )(implicit override val ec: ExecutionContext) extends BackendBaseController with ValidationRules {
@@ -48,6 +50,9 @@ class UpdateGoodsItemRecordsController @Inject()(
   private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.7.json").get
 
   def patchRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
+    //Todo: remove this flag when EIS has implemented the PATCH method - TGP-2417.
+    // isPatchMethodEnabled is false as default
+    if (appConfig.isPatchMethodEnabled) {
       val result = for {
         _ <- EitherT.fromEither[Future](validateAuthorization)
         _ <- EitherT.fromEither[Future](validateWriteHeaders)
@@ -91,6 +96,8 @@ class UpdateGoodsItemRecordsController @Inject()(
 
       }
       result.leftMap(Future.successful).merge.flatten
+    }
+      else updateRecord()(request)
   }
 
   def updateRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
