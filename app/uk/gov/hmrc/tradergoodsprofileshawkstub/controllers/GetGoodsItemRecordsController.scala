@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 
-import cats.data.EitherNec
+import cats.data.{EitherNec, EitherT}
 import cats.syntax.all._
 import play.api.Configuration
 import play.api.libs.json.Json
@@ -34,22 +34,23 @@ import java.time.{Clock, Instant}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
-import cats.data.EitherT
 
 @Singleton
-class GetGoodsItemRecordsController @Inject()(
-                                            override val controllerComponents: ControllerComponents,
-                                            override val traderProfilesRepository: TraderProfileRepository,
-                                            override val uuidService: UuidService,
-                                            override val clock: Clock,
-                                            override val configuration: Configuration,
-                                            override val schemaValidationService: SchemaValidationService,
-                                            goodsItemRecordRepository: GoodsItemRecordRepository,
-                                            headersFilter: HeaderPropagationFilter
-                                          )(implicit override val ec: ExecutionContext) extends BackendBaseController with ValidationRules {
+class GetGoodsItemRecordsController @Inject() (
+  override val controllerComponents: ControllerComponents,
+  override val traderProfilesRepository: TraderProfileRepository,
+  override val uuidService: UuidService,
+  override val clock: Clock,
+  override val configuration: Configuration,
+  override val schemaValidationService: SchemaValidationService,
+  goodsItemRecordRepository: GoodsItemRecordRepository,
+  headersFilter: HeaderPropagationFilter
+)(implicit override val ec: ExecutionContext)
+    extends BackendBaseController
+    with ValidationRules {
 
   private val defaultSize: Int = configuration.get[Int]("goods-item-records.default-size")
-  private val maxSize: Int = configuration.get[Int]("goods-item-records.max-size")
+  private val maxSize: Int     = configuration.get[Int]("goods-item-records.max-size")
 
   private val iso8601Formatter = DateTimeFormatter.ISO_DATE_TIME
 
@@ -66,11 +67,15 @@ class GetGoodsItemRecordsController @Inject()(
 
       goodsItemRecordRepository.get(eori, validatedParams.lastUpdatedDate, page, size).map { result =>
         val pagination = Pagination(totalRecords = result.totalCount.toInt, page, size)
-        Ok(Json.toJson(GetGoodsItemsResponse(result.records, pagination))(GetGoodsItemsResponse.writes(profile, clock.instant())))
+        Ok(
+          Json.toJson(GetGoodsItemsResponse(result.records, pagination))(
+            GetGoodsItemsResponse.writes(profile, clock.instant())
+          )
+        )
           .withHeaders(
             "X-Correlation-ID" -> validatedHeaders.correlationId,
             "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
-            "Content-Type" -> "application/json"
+            "Content-Type"     -> "application/json"
           )
       }
     }
@@ -78,27 +83,40 @@ class GetGoodsItemRecordsController @Inject()(
     result.leftMap(Future.successful).merge.flatten
   }
 
-  def getRecord(eori: String, recordId: String): Action[AnyContent] = (Action andThen headersFilter).async { implicit request =>
-    val result = for {
-      _                <- EitherT.fromEither[Future](validateAuthorization)
-      validatedHeaders <- EitherT.fromEither[Future](validateHeaders)
-      profile          <- getTraderProfile(eori)
-    } yield {
-      goodsItemRecordRepository.getById(eori, recordId).map { record =>
-        val pagination = Pagination(totalRecords = record.size.toInt, page = 0, size = 1)
-        Ok(Json.toJson(GetGoodsItemsResponse(record.toSeq, pagination))(GetGoodsItemsResponse.writes(profile, clock.instant())))
-          .withHeaders(
-            "X-Correlation-ID" -> validatedHeaders.correlationId,
-            "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
-            "Content-Type" -> "application/json"
+  def getRecord(eori: String, recordId: String): Action[AnyContent] = (Action andThen headersFilter).async {
+    implicit request =>
+      val result = for {
+        _                <- EitherT.fromEither[Future](validateAuthorization)
+        validatedHeaders <- EitherT.fromEither[Future](validateHeaders)
+        profile          <- getTraderProfile(eori)
+      } yield goodsItemRecordRepository.getById(eori, recordId).map {
+        case Some(record) =>
+          val pagination = Pagination(totalRecords = 1, page = 0, size = 1)
+          Ok(
+            Json.toJson(GetGoodsItemsResponse(Seq(record), pagination))(
+              GetGoodsItemsResponse.writes(profile, clock.instant())
+            )
+          )
+            .withHeaders(
+              "X-Correlation-ID" -> validatedHeaders.correlationId,
+              "X-Forwarded-Host" -> validatedHeaders.forwardedHost,
+              "Content-Type"     -> "application/json"
+            )
+        case None         =>
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq(
+              "error: 026, message: The requested recordId to update doesn’t exist"
+            )
           )
       }
-    }
 
-    result.leftMap(Future.successful).merge.flatten
+      result.leftMap(Future.successful).merge.flatten
   }
 
-  private def validateHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] = {
+  private def validateHeaders(implicit request: Request[_]): Either[Result, ValidatedHeaders] =
     (
       validateCorrelationId,
       validateForwardedHost,
@@ -113,7 +131,6 @@ class GetGoodsItemRecordsController @Inject()(
         detail = errors.toList
       )
     }
-  }
 
   private def validatePage(implicit request: Request[_]): EitherNec[String, Option[Int]] =
     request.getQueryString("page").traverse { string =>
@@ -131,12 +148,11 @@ class GetGoodsItemRecordsController @Inject()(
 
   private def validateLastUpdatedDate(implicit request: Request[_]): EitherNec[String, Option[Instant]] =
     request.getQueryString("lastUpdatedDate").traverse { string =>
-      Try(Instant.from(iso8601Formatter.parse(string)))
-        .toOption
+      Try(Instant.from(iso8601Formatter.parse(string))).toOption
         .toRightNec("error: 028, message: Invalid Request Parameter")
     }
 
-  private def validateParameters(implicit request: Request[_]): Either[Result, ValidatedParams] = {
+  private def validateParameters(implicit request: Request[_]): Either[Result, ValidatedParams] =
     (
       validatePage,
       validateSize,
@@ -149,7 +165,6 @@ class GetGoodsItemRecordsController @Inject()(
         detail = errors.toList
       )
     }
-  }
 }
 
 object GetGoodsItemRecordsController {

@@ -129,7 +129,7 @@ class GetGoodsItemRecordsControllerSpec
       verify(mockGoodsItemRepository).getById(record.goodsItem.eori, record.recordId)
     }
 
-    "must return an empty response when a result is not returned" in {
+    "must return a 400 with error 026 when a result is not returned" in {
 
       val request = FakeRequest(routes.GetGoodsItemRecordsController.getRecord(record.goodsItem.eori, record.recordId))
         .withHeaders(
@@ -145,14 +145,20 @@ class GetGoodsItemRecordsControllerSpec
 
       val result = route(app, request).value
 
-      status(result) mustEqual OK
+      status(result) mustEqual BAD_REQUEST
 
-      val expectedResponse = Json.toJson(GetGoodsItemsResponse(
-        goodsItemRecords = Seq.empty,
-        pagination = Pagination(totalRecords = 0, page = 0, size = 1)
-      ))(GetGoodsItemsResponse.writes(profile, clock.instant()))
+      val expectedResponse = ErrorResponse(
+        correlationId = correlationId,
+        timestamp = clock.instant(),
+        errorCode = "400",
+        errorMessage = "Bad Request",
+        source = "BACKEND",
+        detail = Seq(
+          "error: 026, message: The requested recordId to update doesn’t exist"
+        )
+      )
 
-      contentAsJson(result) mustEqual expectedResponse
+      contentAsJson(result) mustEqual Json.toJson(expectedResponse)
       header("X-Correlation-ID", result).value mustEqual correlationId
       header("X-Forwarded-Host", result).value mustEqual forwardedHost
       header("Content-Type", result).value mustEqual "application/json"
