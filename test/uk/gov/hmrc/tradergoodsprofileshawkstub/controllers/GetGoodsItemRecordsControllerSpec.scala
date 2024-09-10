@@ -154,7 +154,7 @@ class GetGoodsItemRecordsControllerSpec
         errorMessage = "Bad Request",
         source = "BACKEND",
         detail = Seq(
-          "error: 026, message: The requested recordId to update doesn’t exist"
+          "error: 026, message: Invalid Request Parameter"
         )
       )
 
