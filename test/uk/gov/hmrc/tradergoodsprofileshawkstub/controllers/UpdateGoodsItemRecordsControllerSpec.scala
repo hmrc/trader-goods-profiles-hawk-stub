@@ -192,7 +192,6 @@ class UpdateGoodsItemRecordsControllerSpec
           "Date" -> formattedDate,
           "Authorization" -> "some-token"
         )
-
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(None))
 
       val result = route(app, request).value
