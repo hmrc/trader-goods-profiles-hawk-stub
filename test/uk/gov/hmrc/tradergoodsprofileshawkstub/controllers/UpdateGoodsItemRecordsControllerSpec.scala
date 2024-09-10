@@ -31,6 +31,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.tradergoodsprofileshawkstub.config.AppConfig
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{PatchGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
@@ -57,6 +58,7 @@ class UpdateGoodsItemRecordsControllerSpec
   private val mockGoodsItemRepository = mock[GoodsItemRecordRepository]
   private val mockTraderProfilesRepository = mock[TraderProfileRepository]
   private val mockUuidService = mock[UuidService]
+  private val appConfig = mock[AppConfig]
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
   private val formattedDate = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
@@ -72,7 +74,8 @@ class UpdateGoodsItemRecordsControllerSpec
         bind[Clock].toInstance(clock),
         bind[GoodsItemRecordRepository].toInstance(mockGoodsItemRepository),
         bind[TraderProfileRepository].toInstance(mockTraderProfilesRepository),
-        bind[UuidService].toInstance(mockUuidService)
+        bind[UuidService].toInstance(mockUuidService),
+        bind[AppConfig].toInstance(appConfig)
       )
       .build()
 
@@ -113,7 +116,7 @@ class UpdateGoodsItemRecordsControllerSpec
     )
 
     "must update a record and return the relevant response when given a valid request" in {
-
+      when(appConfig.isPatchMethodEnabled).thenReturn(true)
       val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
