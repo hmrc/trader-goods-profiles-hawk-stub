@@ -23,7 +23,6 @@ import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.tradergoodsprofileshawkstub.config.AppConfig
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.actions.HeaderPropagationFilter
-import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{PatchGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}

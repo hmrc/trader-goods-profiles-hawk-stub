@@ -82,7 +82,6 @@ class UpdateGoodsItemRecordsControllerSpec
   override def beforeEach(): Unit = {
     super.beforeEach()
     Mockito.reset[Any](mockGoodsItemRepository, mockUuidService, mockTraderProfilesRepository)
-    //when(appConfig.isPatchMethodEnabled).thenReturn(true)
   }
 
   "patchRecord" - {
