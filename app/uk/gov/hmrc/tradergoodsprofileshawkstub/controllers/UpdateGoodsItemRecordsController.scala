@@ -141,7 +141,6 @@ class UpdateGoodsItemRecordsController @Inject()(
           )
       }
     }
-
       result.leftMap(Future.successful).merge.flatten
     } else {
       patchRecord()(request)
