@@ -23,8 +23,8 @@ import javax.inject.{Inject, Singleton}
 @Singleton
 class AppConfig @Inject() (config: Configuration) {
 
-  lazy val isPatchMethodEnabled: Boolean =
+  lazy val isPutMethodEnabled: Boolean =
     config
-      .getOptional[Boolean]("features.patchMethodEnabled")
+      .getOptional[Boolean]("features.putMethodEnabled")
       .getOrElse(false)
 }

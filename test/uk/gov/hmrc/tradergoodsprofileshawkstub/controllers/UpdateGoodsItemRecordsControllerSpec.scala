@@ -62,6 +62,35 @@ class UpdateGoodsItemRecordsControllerSpec
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
   private val formattedDate = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
+  private val correlationId = UUID.randomUUID().toString
+  private val forwardedHost = "forwarded-for"
+  private val record = generateRecord
+
+
+  private val patchRequestBody = PatchGoodsItemRecordRequest(
+    recordId = record.recordId,
+    eori = record.goodsItem.eori,
+    actorId = record.goodsItem.actorId,
+    traderRef = None,
+    comcode = None,
+    goodsDescription = None,
+    countryOfOrigin = None,
+    category = None,
+    assessments = None,
+    supplementaryUnit = None,
+    measurementUnit = None,
+    comcodeEffectiveFromDate = None,
+    comcodeEffectiveToDate = None
+  )
+
+  private val profile = TraderProfile(
+    eori = patchRequestBody.eori,
+    actorId = patchRequestBody.actorId,
+    nirmsNumber = None,
+    niphlNumber = None,
+    ukimsNumber = None,
+    lastUpdated = clock.instant()
+  )
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
@@ -81,43 +110,14 @@ class UpdateGoodsItemRecordsControllerSpec
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset[Any](mockGoodsItemRepository, mockUuidService, mockTraderProfilesRepository)
+    Mockito.reset[Any](mockGoodsItemRepository, mockUuidService, mockTraderProfilesRepository, appConfig)
+    when(appConfig.isPutMethodEnabled).thenReturn(true)
   }
 
   "patchRecord" - {
 
-    val correlationId = UUID.randomUUID().toString
-    val forwardedHost = "forwarded-for"
-    val record = generateRecord
-
-    val requestBody = PatchGoodsItemRecordRequest(
-      recordId = record.recordId,
-      eori = record.goodsItem.eori,
-      actorId = record.goodsItem.actorId,
-      traderRef = None,
-      comcode = None,
-      goodsDescription = None,
-      countryOfOrigin = None,
-      category = None,
-      assessments = None,
-      supplementaryUnit = None,
-      measurementUnit = None,
-      comcodeEffectiveFromDate = None,
-      comcodeEffectiveToDate = None
-    )
-
-    val profile = TraderProfile(
-      eori = requestBody.eori,
-      actorId = requestBody.actorId,
-      nirmsNumber = None,
-      niphlNumber = None,
-      ukimsNumber = None,
-      lastUpdated = clock.instant()
-    )
-
     "must update a record and return the relevant response when given a valid request" in {
-      when(appConfig.isPatchMethodEnabled).thenReturn(true)
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -140,13 +140,13 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).patchRecord(requestBody)
+      verify(mockTraderProfilesRepository).get(patchRequestBody.eori)
+      verify(mockGoodsItemRepository).patchRecord(patchRequestBody)
     }
 
     "must not update a record and return an error when the record does not exist in the database" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -180,13 +180,13 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).patchRecord(requestBody)
+      verify(mockTraderProfilesRepository).get(patchRequestBody.eori)
+      verify(mockGoodsItemRepository).patchRecord(patchRequestBody)
     }
 
     "must not update a record and return an error when there is no profile matching the eori" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -218,13 +218,13 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).get(requestBody.eori)
+      verify(mockTraderProfilesRepository).get(patchRequestBody.eori)
       verify(mockGoodsItemRepository, never).patchRecord(any)
     }
 
     "must not update a record and return an error when the updated traderRef is not unique within the database" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -258,13 +258,13 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).patchRecord(requestBody)
+      verify(mockTraderProfilesRepository).get(patchRequestBody.eori)
+      verify(mockGoodsItemRepository).patchRecord(patchRequestBody)
     }
 
     "must not update a record and return an error when the record is inactive" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -298,13 +298,13 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).patchRecord(requestBody)
+      verify(mockTraderProfilesRepository).get(patchRequestBody.eori)
+      verify(mockGoodsItemRepository).patchRecord(patchRequestBody)
     }
 
     "must not update a record and return an error when the record is locked" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -338,13 +338,13 @@ class UpdateGoodsItemRecordsControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
 
       verify(mockUuidService, never).generate()
-      verify(mockTraderProfilesRepository).get(requestBody.eori)
-      verify(mockGoodsItemRepository).patchRecord(requestBody)
+      verify(mockTraderProfilesRepository).get(patchRequestBody.eori)
+      verify(mockGoodsItemRepository).patchRecord(patchRequestBody)
     }
 
     "must not update a record and return an error when there is no correlation-id header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Forwarded-Host" -> forwardedHost,
           "Content-Type" -> "application/json",
@@ -381,7 +381,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is no forwarded-host header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "Content-Type" -> "application/json",
@@ -418,7 +418,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is no date header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -455,7 +455,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is an invalid date header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.patchRecord()).withBody(Json.toJson(patchRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -606,7 +606,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there are json schema violations" in {
 
-      val invalidRequestBody = requestBody.copy(
+      val invalidRequestBody = patchRequestBody.copy(
         eori = "eori12345678901234567890",
         actorId = "actorId12345678901234567890"
       )
@@ -694,10 +694,7 @@ class UpdateGoodsItemRecordsControllerSpec
     }
   }
 
-  "updateRecord" - {
-    val correlationId = UUID.randomUUID().toString
-    val forwardedHost = "forwarded-for"
-    val record = generateRecord
+  "putRecord" - {
 
     val requestBody = UpdateGoodsItemRecordRequest(
       recordId = record.recordId,
@@ -726,7 +723,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must update a record and return the relevant response when given a valid request" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -755,7 +752,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when the record does not exist in the database" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -795,7 +792,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is no profile matching the eori" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -834,7 +831,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when the updated traderRef is not unique within the database" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -874,7 +871,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when the record is inactive" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -914,7 +911,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when the record is locked" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -954,7 +951,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is no correlation-id header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Forwarded-Host" -> forwardedHost,
           "Content-Type" -> "application/json",
@@ -991,7 +988,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is no forwarded-host header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "Content-Type" -> "application/json",
@@ -1028,7 +1025,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is no date header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -1065,7 +1062,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is an invalid date header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -1103,7 +1100,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is no content-type header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord())
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -1140,7 +1137,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when there is an invalid content-type header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord())
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -1178,7 +1175,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when the request body can't be parsed as json" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody("{")
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody("{")
         .withHeaders(
           "Content-Type" -> "application/json",
           "X-Correlation-ID" -> correlationId,
@@ -1221,7 +1218,7 @@ class UpdateGoodsItemRecordsControllerSpec
         actorId = "actorId12345678901234567890"
       )
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord()).withBody(Json.toJson(invalidRequestBody))
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(invalidRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -1260,7 +1257,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return forbidden with no body when there is no authorization header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord())
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -1282,7 +1279,7 @@ class UpdateGoodsItemRecordsControllerSpec
 
     "must not update a record and return forbidden with no body when there is an invalid authorization header" in {
 
-      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.updateRecord())
+      val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
@@ -1301,6 +1298,38 @@ class UpdateGoodsItemRecordsControllerSpec
       verify(mockUuidService, never).generate()
       verify(mockTraderProfilesRepository, never).get(any)
       verify(mockGoodsItemRepository, never).updateRecord(any)
+    }
+
+
+    "when isPutMethodEnabled equal to false" - {
+      "must behave like a patch " in {
+        val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord()).withBody(Json.toJson(patchRequestBody))
+          .withHeaders(
+            "X-Correlation-ID" -> correlationId,
+            "X-Forwarded-Host" -> forwardedHost,
+            "Content-Type" -> "application/json",
+            "Accept" -> "application/json",
+            "Date" -> formattedDate,
+            "Authorization" -> "some-token"
+          )
+
+        when(appConfig.isPutMethodEnabled).thenReturn(false)
+        when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
+        when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.successful(Some(record)))
+
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+
+        contentAsJson(result) mustEqual record.toGetRecordResponse(profile, clock.instant())
+        header("X-Correlation-ID", result).value mustEqual correlationId
+        header("X-Forwarded-Host", result).value mustEqual forwardedHost
+        header("Content-Type", result).value mustEqual "application/json"
+
+        verify(mockUuidService, never).generate()
+        verify(mockTraderProfilesRepository).get(patchRequestBody.eori)
+        verify(mockGoodsItemRepository).patchRecord(patchRequestBody)
+      }
     }
   }
 
