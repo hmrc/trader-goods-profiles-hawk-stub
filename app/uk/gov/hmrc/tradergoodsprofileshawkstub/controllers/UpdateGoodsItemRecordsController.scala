@@ -98,7 +98,7 @@ class UpdateGoodsItemRecordsController @Inject()(
 
   def putRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
     //Todo: remove this flag when EIS has implemented the PATCH method - TGP-2417.
-    // isPatchMethodEnabled is false as default
+    // isPutMethodEnabled is false as default
     if (appConfig.isPutMethodEnabled) {
     val result = for {
       _                <- EitherT.fromEither[Future](validateAuthorization)
