@@ -94,8 +94,6 @@ class UpdateGoodsItemRecordsController @Inject()(
 
       }
       result.leftMap(Future.successful).merge.flatten
-
-
   }
 
   def putRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
@@ -144,9 +142,10 @@ class UpdateGoodsItemRecordsController @Inject()(
       }
     }
 
-    result.leftMap(Future.successful).merge.flatten
+      result.leftMap(Future.successful).merge.flatten
+    } else {
+      patchRecord()(request)
     }
-    else putRecord()(request)
   }
 }
 
