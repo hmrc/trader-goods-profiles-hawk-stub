@@ -50,9 +50,7 @@ class UpdateGoodsItemRecordsController @Inject()(
   private val updateRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-update-record-request-v0.7.json").get
 
   def patchRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
-    //Todo: remove this flag when EIS has implemented the PATCH method - TGP-2417.
-    // isPatchMethodEnabled is false as default
-    if (appConfig.isPatchMethodEnabled) {
+
       val result = for {
         _ <- EitherT.fromEither[Future](validateAuthorization)
         _ <- EitherT.fromEither[Future](validateWriteHeaders)
@@ -96,11 +94,14 @@ class UpdateGoodsItemRecordsController @Inject()(
 
       }
       result.leftMap(Future.successful).merge.flatten
-    }
-      else updateRecord()(request)
+
+
   }
 
-  def updateRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
+  def putRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
+    //Todo: remove this flag when EIS has implemented the PATCH method - TGP-2417.
+    // isPatchMethodEnabled is false as default
+    if (appConfig.isPutMethodEnabled) {
     val result = for {
       _                <- EitherT.fromEither[Future](validateAuthorization)
       _                <- EitherT.fromEither[Future](validateWriteHeaders)
@@ -144,6 +145,8 @@ class UpdateGoodsItemRecordsController @Inject()(
     }
 
     result.leftMap(Future.successful).merge.flatten
+    }
+    else putRecord()(request)
   }
 }
 
