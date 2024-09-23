@@ -44,7 +44,7 @@ import java.util.UUID
 import scala.concurrent.Future
 
 class CreateGoodsItemRecordsControllerSpec
-  extends AnyFreeSpec
+    extends AnyFreeSpec
     with Matchers
     with GuiceOneAppPerSuite
     with ScalaFutures
@@ -53,20 +53,20 @@ class CreateGoodsItemRecordsControllerSpec
     with BeforeAndAfterEach
     with OptionValues {
 
-  private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
-  private val mockGoodsItemRepository = mock[GoodsItemRecordRepository]
+  private val clock                        = Clock.fixed(Instant.now(), ZoneOffset.UTC)
+  private val mockGoodsItemRepository      = mock[GoodsItemRecordRepository]
   private val mockTraderProfilesRepository = mock[TraderProfileRepository]
-  private val mockUuidService = mock[UuidService]
+  private val mockUuidService              = mock[UuidService]
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
-  private val formattedDate = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
+  private val formattedDate    = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure(
-        "expected-auth-header" -> "some-token",
+        "expected-auth-header"            -> "some-token",
         "goods-item-records.default-size" -> 1337,
-        "goods-item-records.max-size" -> 1338
+        "goods-item-records.max-size"     -> 1338
       )
       .overrides(
         bind[Clock].toInstance(clock),
@@ -85,7 +85,7 @@ class CreateGoodsItemRecordsControllerSpec
 
     val correlationId = UUID.randomUUID().toString
     val forwardedHost = "forwarded-for"
-    val record = generateRecord
+    val record        = generateRecord
 
     val requestBody = CreateGoodsItemRecordRequest(
       eori = record.goodsItem.eori,
@@ -113,14 +113,15 @@ class CreateGoodsItemRecordsControllerSpec
 
     "must create a record and return the relevant response when given a valid request" in {
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
@@ -142,18 +143,20 @@ class CreateGoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when the given eori/traderRef is not unique within the database" in {
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-      when(mockGoodsItemRepository.insert(any)).thenReturn(Future.failed(GoodsItemRecordRepository.DuplicateEoriAndTraderRefException))
+      when(mockGoodsItemRepository.insert(any))
+        .thenReturn(Future.failed(GoodsItemRecordRepository.DuplicateEoriAndTraderRefException))
 
       val result = route(app, request).value
 
@@ -182,13 +185,14 @@ class CreateGoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is no correlation-id header" in {
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -219,17 +223,17 @@ class CreateGoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is no forwarded-host header" in {
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -257,17 +261,17 @@ class CreateGoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is no date header" in {
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -295,18 +299,18 @@ class CreateGoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is an invalid date header" in {
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Date" -> "invalid",
-          "Accept" -> "application/json",
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Date"             -> "invalid",
+          "Accept"           -> "application/json",
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -338,13 +342,12 @@ class CreateGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -376,14 +379,13 @@ class CreateGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "text/xml",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "text/xml",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -411,18 +413,18 @@ class CreateGoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when the request body can't be parsed as json" in {
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody("{")
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody("{")
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -453,18 +455,18 @@ class CreateGoodsItemRecordsControllerSpec
         actorId = "actorId12345678901234567890"
       )
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody(Json.toJson(invalidRequestBody))
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody(Json.toJson(invalidRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -493,19 +495,19 @@ class CreateGoodsItemRecordsControllerSpec
 
     "must not create a record and return an error when there is no profile matching the eori" in {
 
-      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.CreateGoodsItemRecordsController.createRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(None))
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val expectedResponse = ErrorResponse(
         correlationId = correlationId,
@@ -537,13 +539,12 @@ class CreateGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "text/xml",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
+          "Content-Type"     -> "text/xml",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val result = route(app, request).value
 
@@ -560,14 +561,13 @@ class CreateGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "text/xml",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-other-token"
+          "Content-Type"     -> "text/xml",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-other-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
-
 
       val result = route(app, request).value
 
@@ -589,18 +589,22 @@ class CreateGoodsItemRecordsControllerSpec
       goodsDescription = "goodsDescription",
       countryOfOrigin = "GB",
       category = Some(Category.Controlled),
-      assessments = Some(Seq(
-        Assessment(
-          assessmentId = Some("assessmentId"),
-          primaryCategory = Some(Category.Controlled),
-          condition = Some(Condition(
-            `type` = Some("type"),
-            conditionId = Some("1234567890"),
-            conditionDescription = Some("conditionDescription"),
-            conditionTraderText = Some("conditionTraderText")
-          ))
+      assessments = Some(
+        Seq(
+          Assessment(
+            assessmentId = Some("assessmentId"),
+            primaryCategory = Some(Category.Controlled),
+            condition = Some(
+              Condition(
+                `type` = Some("type"),
+                conditionId = Some("1234567890"),
+                conditionDescription = Some("conditionDescription"),
+                conditionTraderText = Some("conditionTraderText")
+              )
+            )
+          )
         )
-      )),
+      ),
       supplementaryUnit = Some(BigDecimal(2.5)),
       measurementUnit = Some("measurementUnit"),
       comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS),

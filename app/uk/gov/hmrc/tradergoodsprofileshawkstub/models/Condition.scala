@@ -19,11 +19,11 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models
 import play.api.libs.json.{Format, Json}
 
 case class Condition(
-                      `type`: Option[String],
-                      conditionId: Option[String],
-                      conditionDescription: Option[String],
-                      conditionTraderText: Option[String]
-                    )
+  `type`: Option[String],
+  conditionId: Option[String],
+  conditionDescription: Option[String],
+  conditionTraderText: Option[String]
+)
 
 object Condition {
 

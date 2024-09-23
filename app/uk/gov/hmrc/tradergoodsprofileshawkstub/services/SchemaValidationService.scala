@@ -30,22 +30,26 @@ import scala.util.Try
 
 @Singleton
 class SchemaValidationService @Inject() (
-                                          environment: Environment
-                                        ) {
+  environment: Environment
+) {
 
   def validate(schema: Schema, input: JsValue): Seq[SchemaValidationError] =
     try {
       val json = new JSONObject(Json.stringify(input))
       schema.validate(json)
       Seq.empty
-    } catch { case e: ValidationException =>
-      accumulateErrors(e)
+    } catch {
+      case e: ValidationException =>
+        accumulateErrors(e)
     }
 
   private def accumulateErrors(e: ValidationException): Seq[SchemaValidationError] = {
 
     @tailrec
-    def traverse(accumulator: Seq[ValidationException], exceptions: Seq[ValidationException]): Seq[ValidationException] = {
+    def traverse(
+      accumulator: Seq[ValidationException],
+      exceptions: Seq[ValidationException]
+    ): Seq[ValidationException] =
       if (exceptions.isEmpty) {
         accumulator
       } else {
@@ -57,7 +61,6 @@ class SchemaValidationService @Inject() (
           traverse(accumulator, head.getCausingExceptions.asScala.toSeq ++ tail)
         }
       }
-    }
 
     def formatPointer(pointer: String): String =
       pointer
@@ -71,7 +74,7 @@ class SchemaValidationService @Inject() (
 
   def createSchema(path: String): Try[Schema] = Try {
     val inputStream = environment.resourceAsStream(path).get
-    val rawSchema = new JSONObject(new JSONTokener(inputStream))
+    val rawSchema   = new JSONObject(new JSONTokener(inputStream))
     SchemaLoader.load(rawSchema)
   }
 }

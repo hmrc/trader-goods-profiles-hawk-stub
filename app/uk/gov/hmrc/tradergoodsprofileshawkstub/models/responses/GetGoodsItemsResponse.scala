@@ -23,17 +23,16 @@ import java.time.Instant
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
 
 final case class GetGoodsItemsResponse(
-                                        goodsItemRecords: Seq[GoodsItemRecord],
-                                        pagination: Pagination
-                                      )
+  goodsItemRecords: Seq[GoodsItemRecord],
+  pagination: Pagination
+)
 
 object GetGoodsItemsResponse {
 
   def writes(profile: TraderProfile, now: Instant): OWrites[GetGoodsItemsResponse] = OWrites { response =>
-
     Json.obj(
       "goodsItemRecords" -> response.goodsItemRecords.map(_.toGetRecordResponse(profile, now)),
-      "pagination" -> response.pagination
+      "pagination"       -> response.pagination
     )
   }
 }

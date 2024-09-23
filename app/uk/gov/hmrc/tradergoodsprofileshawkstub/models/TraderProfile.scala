@@ -22,13 +22,13 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import java.time.Instant
 
 final case class TraderProfile(
-                                eori: String,
-                                actorId: String,
-                                ukimsNumber: Option[String],
-                                nirmsNumber: Option[String],
-                                niphlNumber: Option[String],
-                                lastUpdated: Instant
-                              )
+  eori: String,
+  actorId: String,
+  ukimsNumber: Option[String],
+  nirmsNumber: Option[String],
+  niphlNumber: Option[String],
+  lastUpdated: Instant
+)
 
 object TraderProfile {
 

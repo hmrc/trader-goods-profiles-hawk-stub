@@ -19,12 +19,12 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses
 import play.api.libs.json.{Json, JsonConfiguration, OFormat, OptionHandlers}
 
 final case class Pagination(
-                             totalRecords: Int,
-                             currentPage: Int,
-                             totalPages: Int,
-                             nextPage: Option[Int],
-                             previousPage: Option[Int]
-                           )
+  totalRecords: Int,
+  currentPage: Int,
+  totalPages: Int,
+  nextPage: Option[Int],
+  previousPage: Option[Int]
+)
 
 object Pagination {
 

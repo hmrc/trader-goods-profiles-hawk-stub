@@ -40,11 +40,11 @@ class ErrorResponseSpec extends AnyFreeSpec with Matchers with OptionValues {
 
     val expectedJson = Json.obj(
       "errorDetail" -> Json.obj(
-        "correlationId" -> "correlationId",
-        "timestamp" -> clock.instant(),
-        "errorCode" -> "errorCode",
-        "errorMessage" -> "errorMessage",
-        "source" -> "source",
+        "correlationId"     -> "correlationId",
+        "timestamp"         -> clock.instant(),
+        "errorCode"         -> "errorCode",
+        "errorMessage"      -> "errorMessage",
+        "source"            -> "source",
         "sourceFaultDetail" -> Json.obj(
           "detail" -> Json.arr("error1", "error2")
         )
