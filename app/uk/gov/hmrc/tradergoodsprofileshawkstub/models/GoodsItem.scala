@@ -22,19 +22,19 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import java.time.Instant
 
 final case class GoodsItem(
-                            eori: String,
-                            actorId: String,
-                            traderRef: String,
-                            comcode: String,
-                            goodsDescription: String,
-                            countryOfOrigin: String,
-                            category: Option[Category],
-                            assessments: Option[Seq[Assessment]],
-                            supplementaryUnit: Option[BigDecimal],
-                            measurementUnit: Option[String],
-                            comcodeEffectiveFromDate: Instant,
-                            comcodeEffectiveToDate: Option[Instant]
-                          )
+  eori: String,
+  actorId: String,
+  traderRef: String,
+  comcode: String,
+  goodsDescription: String,
+  countryOfOrigin: String,
+  category: Option[Category],
+  assessments: Option[Seq[Assessment]],
+  supplementaryUnit: Option[BigDecimal],
+  measurementUnit: Option[String],
+  comcodeEffectiveFromDate: Instant,
+  comcodeEffectiveToDate: Option[Instant]
+)
 
 object GoodsItem {
 

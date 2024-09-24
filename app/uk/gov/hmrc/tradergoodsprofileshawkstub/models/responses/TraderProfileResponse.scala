@@ -19,8 +19,7 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
 
-case class TraderProfileResponse
-(
+case class TraderProfileResponse(
   eori: String,
   actorId: String,
   ukimsNumber: Option[String],

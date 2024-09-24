@@ -31,48 +31,48 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class RemoveGoodsItemRecordsController @Inject()(
-                                            override val controllerComponents: ControllerComponents,
-                                            override val traderProfilesRepository: TraderProfileRepository,
-                                            override val uuidService: UuidService,
-                                            override val clock: Clock,
-                                            override val configuration: Configuration,
-                                            override val schemaValidationService: SchemaValidationService,
-                                            goodsItemRecordRepository: GoodsItemRecordRepository,
-                                            headersFilter: HeaderPropagationFilter
-                                          )(implicit override val ec: ExecutionContext) extends BackendBaseController with ValidationRules {
+class RemoveGoodsItemRecordsController @Inject() (
+  override val controllerComponents: ControllerComponents,
+  override val traderProfilesRepository: TraderProfileRepository,
+  override val uuidService: UuidService,
+  override val clock: Clock,
+  override val configuration: Configuration,
+  override val schemaValidationService: SchemaValidationService,
+  goodsItemRecordRepository: GoodsItemRecordRepository,
+  headersFilter: HeaderPropagationFilter
+)(implicit override val ec: ExecutionContext)
+    extends BackendBaseController
+    with ValidationRules {
 
   // Using `get` here as we want to throw an exception on startup if this can't be found
-  private val removeRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-remove-record-request-v0.2.json").get
+  private val removeRecordSchema: Schema =
+    schemaValidationService.createSchema("/schemas/tgp-remove-record-request-v0.2.json").get
 
   def removeRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
-
     val result = for {
-      _                <- EitherT.fromEither[Future](validateAuthorization)
-      _                <- EitherT.fromEither[Future](validateWriteHeaders)
-      body             <- EitherT.fromEither[Future](validateRequestBody[RemoveGoodsItemRecordRequest](removeRecordSchema))
-      _                <- getTraderProfile(body.eori)
-    } yield {
-      goodsItemRecordRepository.deactivate(body).map {
-        _.map { record =>
-          if (record.metadata.active) {
-            Ok
-          } else {
-            badRequest(
-              errorCode = "400",
-              errorMessage = "Bad Request",
-              source = "BACKEND",
-              detail = Seq("error: 031, message: Invalid Request Parameter")
-            )
-          }
-        }.getOrElse {
+      _    <- EitherT.fromEither[Future](validateAuthorization)
+      _    <- EitherT.fromEither[Future](validateWriteHeaders)
+      body <- EitherT.fromEither[Future](validateRequestBody[RemoveGoodsItemRecordRequest](removeRecordSchema))
+      _    <- getTraderProfile(body.eori)
+    } yield goodsItemRecordRepository.deactivate(body).map {
+      _.map { record =>
+        if (record.metadata.active) {
+          Ok
+        } else {
           badRequest(
             errorCode = "400",
             errorMessage = "Bad Request",
             source = "BACKEND",
-            detail = Seq("error: 026, message: Invalid Request Parameter")
+            detail = Seq("error: 031, message: Invalid Request Parameter")
           )
         }
+      }.getOrElse {
+        badRequest(
+          errorCode = "400",
+          errorMessage = "Bad Request",
+          source = "BACKEND",
+          detail = Seq("error: 026, message: Invalid Request Parameter")
+        )
       }
     }
 

@@ -19,10 +19,10 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models
 import play.api.libs.json.{Format, Json}
 
 final case class Assessment(
-                             assessmentId: Option[String],
-                             primaryCategory: Option[Category],
-                             condition: Option[Condition]
-                           )
+  assessmentId: Option[String],
+  primaryCategory: Option[Category],
+  condition: Option[Condition]
+)
 
 object Assessment {
 

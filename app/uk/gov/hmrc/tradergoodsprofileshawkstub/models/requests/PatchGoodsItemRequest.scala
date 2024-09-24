@@ -22,17 +22,17 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{AccreditationStatus, Decl
 import java.time.Instant
 
 final case class PatchGoodsItemRequest(
-                                        eori: String,
-                                        recordId: String,
-                                        accreditationStatus: Option[AccreditationStatus],
-                                        version: Option[Int],
-                                        active: Option[Boolean],
-                                        locked: Option[Boolean],
-                                        toReview: Option[Boolean],
-                                        declarable: Option[Declarable],
-                                        reviewReason: Option[String],
-                                        updatedDateTime: Option[Instant]
-                                      )
+  eori: String,
+  recordId: String,
+  accreditationStatus: Option[AccreditationStatus],
+  version: Option[Int],
+  active: Option[Boolean],
+  locked: Option[Boolean],
+  toReview: Option[Boolean],
+  declarable: Option[Declarable],
+  reviewReason: Option[String],
+  updatedDateTime: Option[Instant]
+)
 
 object PatchGoodsItemRequest {
 

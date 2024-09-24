@@ -22,17 +22,17 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import java.time.Instant
 
 final case class GoodsItemMetadata(
-                                    accreditationStatus: AccreditationStatus,
-                                    version: Int,
-                                    active: Boolean,
-                                    locked: Boolean,
-                                    toReview: Boolean,
-                                    declarable: Option[String],
-                                    reviewReason: Option[String],
-                                    srcSystemName: String,
-                                    createdDateTime: Instant,
-                                    updatedDateTime: Instant
-                                  )
+  accreditationStatus: AccreditationStatus,
+  version: Int,
+  active: Boolean,
+  locked: Boolean,
+  toReview: Boolean,
+  declarable: Option[String],
+  reviewReason: Option[String],
+  srcSystemName: String,
+  createdDateTime: Instant,
+  updatedDateTime: Instant
+)
 
 object GoodsItemMetadata {
 

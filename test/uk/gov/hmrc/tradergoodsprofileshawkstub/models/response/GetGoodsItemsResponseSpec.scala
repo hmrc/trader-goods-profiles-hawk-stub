@@ -44,13 +44,15 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
           goodsDescription = "goodsDescription",
           countryOfOrigin = "countryOfOrigin",
           category = Some(Category.Controlled),
-          assessments = Some(Seq(
-            Assessment(
-              assessmentId = None,
-              primaryCategory = None,
-              condition = None
+          assessments = Some(
+            Seq(
+              Assessment(
+                assessmentId = None,
+                primaryCategory = None,
+                condition = None
+              )
             )
-          )),
+          ),
           supplementaryUnit = None,
           measurementUnit = None,
           comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS),
@@ -92,11 +94,11 @@ class GetGoodsItemsResponseSpec extends AnyFreeSpec with Matchers {
 
       val expectedJson = Json.obj(
         "goodsItemRecords" -> Json.arr(goodsItemRecord.toGetRecordResponse(profile, clock.instant())),
-        "pagination" -> Json.obj(
+        "pagination"       -> Json.obj(
           "totalRecords" -> 2,
-          "currentPage" -> 1,
-          "totalPages" -> 2,
-          "nextPage" -> 2,
+          "currentPage"  -> 1,
+          "totalPages"   -> 2,
+          "nextPage"     -> 2,
           "previousPage" -> JsNull
         )
       )

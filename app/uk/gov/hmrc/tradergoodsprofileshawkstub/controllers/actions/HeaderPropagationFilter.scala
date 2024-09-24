@@ -24,26 +24,25 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class HeaderPropagationFilter @Inject() (
-                               uuidService: UuidService
-                             )(implicit override val executionContext: ExecutionContext) extends ActionFunction[Request, Request] {
+  uuidService: UuidService
+)(implicit override val executionContext: ExecutionContext)
+    extends ActionFunction[Request, Request] {
 
-  override def invokeBlock[A](request: Request[A], block: Request[A] => Future[Result]): Future[Result] = {
-
+  override def invokeBlock[A](request: Request[A], block: Request[A] => Future[Result]): Future[Result] =
     block(request).map { result =>
-
-      val correlationId = request.headers.get("X-Correlation-Id")
+      val correlationId = request.headers
+        .get("X-Correlation-Id")
         .orElse(result.header.headers.get("X-Correlation-Id"))
         .getOrElse(uuidService.generate())
 
       val forwardedHost = request.headers.get("X-Forwarded-Host")
 
       val headers = Seq(
-        Some("X-Correlation-Id" -> correlationId),
+        Some("X-Correlation-Id"              -> correlationId),
         forwardedHost.map("X-Forwarded-Host" -> _),
-        Some("Content-Type" -> "application/json")
+        Some("Content-Type"                  -> "application/json")
       ).flatten
 
       result.withHeaders(headers: _*)
     }
-  }
 }

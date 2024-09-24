@@ -32,31 +32,35 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class CreateGoodsItemRecordsController @Inject()(
-                                                  override val controllerComponents: ControllerComponents,
-                                                  override val traderProfilesRepository: TraderProfileRepository,
-                                                  override val uuidService: UuidService,
-                                                  override val clock: Clock,
-                                                  override val configuration: Configuration,
-                                                  override val schemaValidationService: SchemaValidationService,
-                                                  goodsItemRecordRepository: GoodsItemRecordRepository,
-                                                  headersFilter: HeaderPropagationFilter
-                                                )(implicit override val ec: ExecutionContext) extends BackendBaseController with ValidationRules {
+class CreateGoodsItemRecordsController @Inject() (
+  override val controllerComponents: ControllerComponents,
+  override val traderProfilesRepository: TraderProfileRepository,
+  override val uuidService: UuidService,
+  override val clock: Clock,
+  override val configuration: Configuration,
+  override val schemaValidationService: SchemaValidationService,
+  goodsItemRecordRepository: GoodsItemRecordRepository,
+  headersFilter: HeaderPropagationFilter
+)(implicit override val ec: ExecutionContext)
+    extends BackendBaseController
+    with ValidationRules {
 
   // Using `get` here as we want to throw an exception on startup if this can't be found
-  private val createRecordSchema: Schema = schemaValidationService.createSchema("/schemas/tgp-create-record-request-v0.7.json").get
+  private val createRecordSchema: Schema =
+    schemaValidationService.createSchema("/schemas/tgp-create-record-request-v0.7.json").get
 
   def createRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
-
     val result = for {
-      _                <- EitherT.fromEither[Future](validateAuthorization)
-      _                <- EitherT.fromEither[Future](validateWriteHeaders)
-      body             <- EitherT.fromEither[Future](validateRequestBody[CreateGoodsItemRecordRequest](createRecordSchema))
-      profile          <- getTraderProfile(body.eori)
-    } yield {
-      goodsItemRecordRepository.insert(body).map { goodsItemRecord =>
+      _       <- EitherT.fromEither[Future](validateAuthorization)
+      _       <- EitherT.fromEither[Future](validateWriteHeaders)
+      body    <- EitherT.fromEither[Future](validateRequestBody[CreateGoodsItemRecordRequest](createRecordSchema))
+      profile <- getTraderProfile(body.eori)
+    } yield goodsItemRecordRepository
+      .insert(body)
+      .map { goodsItemRecord =>
         Created(goodsItemRecord.toCreateRecordResponse(profile, clock.instant()))
-      }.recover { case DuplicateEoriAndTraderRefException =>
+      }
+      .recover { case DuplicateEoriAndTraderRefException =>
         badRequest(
           errorCode = "400",
           errorMessage = "Bad Request",
@@ -64,7 +68,6 @@ class CreateGoodsItemRecordsController @Inject()(
           detail = Seq("error: 010, message: Invalid Request Parameter")
         )
       }
-    }
 
     result.leftMap(Future.successful).merge.flatten
   }

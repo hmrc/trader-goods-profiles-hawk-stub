@@ -36,9 +36,9 @@ class SchemaValidationServiceSpec extends AnyFreeSpec with Matchers with OptionV
       val json = Json.obj(
         "name" -> Json.obj(
           "firstName" -> "foo",
-          "lastName" -> "bar",
+          "lastName"  -> "bar"
         ),
-        "age" -> 20
+        "age"  -> 20
       )
 
       validatorService.validate(testSchema, json) mustBe empty
@@ -53,7 +53,7 @@ class SchemaValidationServiceSpec extends AnyFreeSpec with Matchers with OptionV
       val expectedErrors = Seq(
         SchemaValidationError("$", "required key [age] not found"),
         SchemaValidationError("$.name", "required key [firstName] not found"),
-        SchemaValidationError("$.name", "required key [lastName] not found"),
+        SchemaValidationError("$.name", "required key [lastName] not found")
       )
 
       validatorService.validate(testSchema, json) mustEqual expectedErrors

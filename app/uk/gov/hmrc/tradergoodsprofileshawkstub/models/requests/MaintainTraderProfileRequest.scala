@@ -19,12 +19,12 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests
 import play.api.libs.json.{Json, OFormat}
 
 final case class MaintainTraderProfileRequest(
-                                               eori: String,
-                                               actorId: String,
-                                               ukimsNumber: Option[String],
-                                               nirmsNumber: Option[String],
-                                               niphlNumber: Option[String],
-                                             )
+  eori: String,
+  actorId: String,
+  ukimsNumber: Option[String],
+  nirmsNumber: Option[String],
+  niphlNumber: Option[String]
+)
 
 object MaintainTraderProfileRequest {
 

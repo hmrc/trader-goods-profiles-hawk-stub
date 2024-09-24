@@ -43,7 +43,7 @@ import java.util.UUID
 import scala.concurrent.Future
 
 class TraderProfilesControllerSpec
-  extends AnyFreeSpec
+    extends AnyFreeSpec
     with Matchers
     with GuiceOneAppPerSuite
     with ScalaFutures
@@ -52,17 +52,17 @@ class TraderProfilesControllerSpec
     with BeforeAndAfterEach
     with OptionValues {
 
-  private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
-  private val mockRepository = mock[TraderProfileRepository]
+  private val clock           = Clock.fixed(Instant.now(), ZoneOffset.UTC)
+  private val mockRepository  = mock[TraderProfileRepository]
   private val mockUuidService = mock[UuidService]
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
-  private val formattedDate = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
+  private val formattedDate    = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure(
-        "expected-auth-header" -> "some-token",
+        "expected-auth-header" -> "some-token"
       )
       .overrides(
         bind[Clock].toInstance(clock),
@@ -80,20 +80,25 @@ class TraderProfilesControllerSpec
 
     val correlationId = UUID.randomUUID().toString
     val forwardedHost = "forwarded-for"
-    val requestBody = MaintainTraderProfileRequest(
-      eori = "eori1234567890", actorId = "actorId1234567", ukimsNumber = Some("1"*32), nirmsNumber = Some("2"*13), niphlNumber = Some("3"*8)
+    val requestBody   = MaintainTraderProfileRequest(
+      eori = "eori1234567890",
+      actorId = "actorId1234567",
+      ukimsNumber = Some("1" * 32),
+      nirmsNumber = Some("2" * 13),
+      niphlNumber = Some("3" * 8)
     )
 
     "must update the trader profile when given a valid request" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockRepository.upsert(any)).thenReturn(Future.successful(Done))
@@ -112,13 +117,14 @@ class TraderProfilesControllerSpec
 
     "must not update the trader profile and return an error when there is no correlation-id header" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       val expectedResponse = ErrorResponse(
@@ -148,13 +154,14 @@ class TraderProfilesControllerSpec
 
     "must not update the trader profile and return an error when there is no forwarded-host header" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -183,13 +190,14 @@ class TraderProfilesControllerSpec
 
     "must not update the trader profile and return an error when there is no date header" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -217,14 +225,15 @@ class TraderProfilesControllerSpec
 
     "must not update the trader profile and return an error when there is an invalid date header" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Date" -> "invalid",
-          "Accept" -> "application/json",
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Date"             -> "invalid",
+          "Accept"           -> "application/json",
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -257,9 +266,9 @@ class TraderProfilesControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -292,10 +301,10 @@ class TraderProfilesControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "text/xml",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "text/xml",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -324,14 +333,15 @@ class TraderProfilesControllerSpec
 
     "must not update the trader profile and return an error when the request body can't be parsed as json" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody("{")
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody("{")
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -358,14 +368,15 @@ class TraderProfilesControllerSpec
 
     "must not update the trader profile and return an error when there are json schema violations" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody(Json.obj())
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody(Json.obj())
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -395,13 +406,14 @@ class TraderProfilesControllerSpec
 
     "must not update the trader profile and return forbidden with no body when there is no authorization header" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -415,14 +427,15 @@ class TraderProfilesControllerSpec
 
     "must not update the trader profile and return forbidden with no body when there is an invalid authorization header" in {
 
-      val request = FakeRequest(routes.TraderProfilesController.maintainProfile()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.TraderProfilesController.maintainProfile())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-other-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-other-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)

@@ -43,7 +43,7 @@ import java.util.UUID
 import scala.concurrent.Future
 
 class RemoveGoodsItemRecordsControllerSpec
-  extends AnyFreeSpec
+    extends AnyFreeSpec
     with Matchers
     with GuiceOneAppPerSuite
     with ScalaFutures
@@ -52,20 +52,20 @@ class RemoveGoodsItemRecordsControllerSpec
     with BeforeAndAfterEach
     with OptionValues {
 
-  private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
-  private val mockGoodsItemRepository = mock[GoodsItemRecordRepository]
+  private val clock                        = Clock.fixed(Instant.now(), ZoneOffset.UTC)
+  private val mockGoodsItemRepository      = mock[GoodsItemRecordRepository]
   private val mockTraderProfilesRepository = mock[TraderProfileRepository]
-  private val mockUuidService = mock[UuidService]
+  private val mockUuidService              = mock[UuidService]
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
-  private val formattedDate = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
+  private val formattedDate    = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure(
-        "expected-auth-header" -> "some-token",
+        "expected-auth-header"            -> "some-token",
         "goods-item-records.default-size" -> 1337,
-        "goods-item-records.max-size" -> 1338
+        "goods-item-records.max-size"     -> 1338
       )
       .overrides(
         bind[Clock].toInstance(clock),
@@ -84,7 +84,7 @@ class RemoveGoodsItemRecordsControllerSpec
 
     val correlationId = UUID.randomUUID().toString
     val forwardedHost = "forwarded-for"
-    val record = generateRecord
+    val record        = generateRecord
 
     val requestBody = RemoveGoodsItemRecordRequest(
       eori = "eori1234567890",
@@ -103,13 +103,14 @@ class RemoveGoodsItemRecordsControllerSpec
 
     "must deactivate the given record and return OK when the record exists" in {
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
@@ -130,13 +131,14 @@ class RemoveGoodsItemRecordsControllerSpec
 
     "must return an error when the record does not exist" in {
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
@@ -171,13 +173,14 @@ class RemoveGoodsItemRecordsControllerSpec
 
       val deactivatedRecord = record.copy(metadata = record.metadata.copy(active = false))
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
@@ -210,13 +213,14 @@ class RemoveGoodsItemRecordsControllerSpec
 
     "must return an error when there is no profile matching the eori" in {
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(None))
@@ -248,13 +252,14 @@ class RemoveGoodsItemRecordsControllerSpec
 
     "must not deactivate the given record and return an error when there is no correlation-id header" in {
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -285,13 +290,14 @@ class RemoveGoodsItemRecordsControllerSpec
 
     "must not deactivate the given record and return an error when there is no forward-host header" in {
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -322,13 +328,14 @@ class RemoveGoodsItemRecordsControllerSpec
 
     "must not deactivate the given record and return an error when there is no date header" in {
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(requestBody))
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody(Json.toJson(requestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -363,9 +370,9 @@ class RemoveGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "text/xml",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
+          "Content-Type"     -> "text/xml",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -385,9 +392,9 @@ class RemoveGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockGoodsItemRepository.insert(any)).thenReturn(Future.successful(record))
@@ -423,10 +430,10 @@ class RemoveGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "text/xml",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "text/xml",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockGoodsItemRepository.insert(any)).thenReturn(Future.successful(record))
@@ -458,14 +465,15 @@ class RemoveGoodsItemRecordsControllerSpec
 
     "must not update a record and return an error when the request body can't be parsed as json" in {
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody("{")
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody("{")
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -499,14 +507,15 @@ class RemoveGoodsItemRecordsControllerSpec
         actorId = "actorId12345678901234567890"
       )
 
-      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord()).withBody(Json.toJson(invalidRequestBody))
+      val request = FakeRequest(routes.RemoveGoodsItemRecordsController.removeRecord())
+        .withBody(Json.toJson(invalidRequestBody))
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "application/json",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Content-Type"     -> "application/json",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -542,10 +551,10 @@ class RemoveGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "text/xml",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-other-token"
+          "Content-Type"     -> "text/xml",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-other-token"
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -565,9 +574,9 @@ class RemoveGoodsItemRecordsControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Content-Type" -> "text/xml",
-          "Accept" -> "application/json",
-          "Date" -> formattedDate
+          "Content-Type"     -> "text/xml",
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate
         )
 
       when(mockUuidService.generate()).thenReturn(correlationId)
@@ -592,18 +601,22 @@ class RemoveGoodsItemRecordsControllerSpec
       goodsDescription = "goodsDescription",
       countryOfOrigin = "GB",
       category = Some(Category.Controlled),
-      assessments = Some(Seq(
-        Assessment(
-          assessmentId = Some("assessmentId"),
-          primaryCategory = Some(Category.Controlled),
-          condition = Some(Condition(
-            `type` = Some("type"),
-            conditionId = Some("1234567890"),
-            conditionDescription = Some("conditionDescription"),
-            conditionTraderText = Some("conditionTraderText")
-          ))
+      assessments = Some(
+        Seq(
+          Assessment(
+            assessmentId = Some("assessmentId"),
+            primaryCategory = Some(Category.Controlled),
+            condition = Some(
+              Condition(
+                `type` = Some("type"),
+                conditionId = Some("1234567890"),
+                conditionDescription = Some("conditionDescription"),
+                conditionTraderText = Some("conditionTraderText")
+              )
+            )
+          )
         )
-      )),
+      ),
       supplementaryUnit = Some(BigDecimal(2.5)),
       measurementUnit = Some("measurementUnit"),
       comcodeEffectiveFromDate = clock.instant().minus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS),

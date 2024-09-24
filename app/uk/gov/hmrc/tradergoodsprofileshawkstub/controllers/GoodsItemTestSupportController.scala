@@ -25,13 +25,13 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class GoodsItemTestSupportController @Inject()(
-                                                override val controllerComponents: ControllerComponents,
-                                                goodsItemRecordRepository: GoodsItemRecordRepository
-                                              )(implicit ec: ExecutionContext) extends BackendBaseController {
+class GoodsItemTestSupportController @Inject() (
+  override val controllerComponents: ControllerComponents,
+  goodsItemRecordRepository: GoodsItemRecordRepository
+)(implicit ec: ExecutionContext)
+    extends BackendBaseController {
 
   def patch(): Action[PatchGoodsItemRequest] = Action(parse.json[PatchGoodsItemRequest]).async { implicit request =>
-
     goodsItemRecordRepository
       .patch(request.body)
       .map(_.map(_ => Ok).getOrElse(NotFound))

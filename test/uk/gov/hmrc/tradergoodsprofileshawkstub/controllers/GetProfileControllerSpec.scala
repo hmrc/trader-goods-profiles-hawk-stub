@@ -40,9 +40,8 @@ import java.time.{Clock, Instant, ZoneId, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.Future
 
-
 class GetProfileControllerSpec
-  extends AnyFreeSpec
+    extends AnyFreeSpec
     with Matchers
     with GuiceOneAppPerSuite
     with ScalaFutures
@@ -51,18 +50,18 @@ class GetProfileControllerSpec
     with BeforeAndAfterEach
     with OptionValues {
 
-  private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
-  private val correlationId = UUID.randomUUID().toString
+  private val clock                       = Clock.fixed(Instant.now(), ZoneOffset.UTC)
+  private val correlationId               = UUID.randomUUID().toString
   private val mockTraderProfileRepository = mock[TraderProfileRepository]
-  private val mockUuidService = mock[UuidService]
+  private val mockUuidService             = mock[UuidService]
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
-  private val formattedDate = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
+  private val formattedDate    = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure(
-        "expected-auth-header" -> "some-token",
+        "expected-auth-header" -> "some-token"
       )
       .overrides(
         bind[Clock].toInstance(clock),
@@ -70,7 +69,6 @@ class GetProfileControllerSpec
         bind[UuidService].toInstance(mockUuidService)
       )
       .build()
-
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -82,26 +80,20 @@ class GetProfileControllerSpec
   "getProfile" - {
 
     val forwardedHost = "forwarded-for"
-    val eori = "eori1234567890"
-    val actorId = "actorId1234567"
-    val profile = TraderProfile(
-      eori,
-      actorId,
-      None,
-      None,
-      None,
-      clock.instant())
+    val eori          = "eori1234567890"
+    val actorId       = "actorId1234567"
+    val profile       = TraderProfile(eori, actorId, None, None, None, clock.instant())
 
     "should return a successful response" in {
       when(mockTraderProfileRepository.get(any)).thenReturn(Future.successful(Some(profile)))
 
       val request = FakeRequest(routes.GetProfileController.getProfile(eori))
         .withHeaders(validHeaders: _*)
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.obj(
-        "eori" -> eori,
+        "eori"    -> eori,
         "actorId" -> actorId
       )
 
@@ -113,7 +105,7 @@ class GetProfileControllerSpec
 
       val request = FakeRequest(routes.GetProfileController.getProfile(eori))
         .withHeaders("Authorization" -> "some-token")
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustBe BAD_REQUEST
       verify(mockTraderProfileRepository, never).get(any)
@@ -122,11 +114,11 @@ class GetProfileControllerSpec
       header("Content-Type", result).value mustEqual "application/json"
       contentAsJson(result) mustBe Json.obj(
         "errorDetail" -> Json.obj(
-          "correlationId" -> correlationId,
-          "timestamp" -> clock.instant(),
-          "errorCode" -> "400",
-          "errorMessage" -> "Bad Request",
-          "source" -> "BACKEND",
+          "correlationId"     -> correlationId,
+          "timestamp"         -> clock.instant(),
+          "errorCode"         -> "400",
+          "errorMessage"      -> "Bad Request",
+          "source"            -> "BACKEND",
           "sourceFaultDetail" -> Json.obj(
             "detail" -> Json.arr(
               "error: 001, message: Invalid Header",
@@ -146,10 +138,10 @@ class GetProfileControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate
         )
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustBe FORBIDDEN
       verify(mockTraderProfileRepository, never).get(any)
@@ -162,11 +154,11 @@ class GetProfileControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "invalid-header"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "invalid-header"
         )
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustBe FORBIDDEN
       verify(mockTraderProfileRepository, never).get(any)
@@ -179,20 +171,20 @@ class GetProfileControllerSpec
         .withHeaders(
           "X-Correlation-ID" -> correlationId,
           "X-Forwarded-Host" -> forwardedHost,
-          "Accept" -> "application/json",
-          "Date" -> formattedDate,
-          "Authorization" -> "some-token"
+          "Accept"           -> "application/json",
+          "Date"             -> formattedDate,
+          "Authorization"    -> "some-token"
         )
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustBe BAD_REQUEST
       contentAsJson(result) mustBe Json.obj(
         "errorDetail" -> Json.obj(
-          "correlationId" -> correlationId,
-          "timestamp" -> clock.instant(),
-          "errorCode" -> "400",
-          "errorMessage" -> "Bad Request",
-          "source" -> "BACKEND",
+          "correlationId"     -> correlationId,
+          "timestamp"         -> clock.instant(),
+          "errorCode"         -> "400",
+          "errorMessage"      -> "Bad Request",
+          "source"            -> "BACKEND",
           "sourceFaultDetail" -> Json.obj(
             "detail" -> Json.arr(
               "error: 007, message: Invalid Request Parameter"
@@ -206,9 +198,9 @@ class GetProfileControllerSpec
       Seq(
         "X-Correlation-ID" -> correlationId,
         "X-Forwarded-Host" -> forwardedHost,
-        "Accept" -> "application/json",
-        "Date" -> formattedDate,
-        "Authorization" -> "some-token"
+        "Accept"           -> "application/json",
+        "Date"             -> formattedDate,
+        "Authorization"    -> "some-token"
       )
   }
 }

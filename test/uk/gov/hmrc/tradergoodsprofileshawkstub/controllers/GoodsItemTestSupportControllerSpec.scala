@@ -39,7 +39,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepos
 import scala.concurrent.Future
 
 class GoodsItemTestSupportControllerSpec
-  extends AnyFreeSpec
+    extends AnyFreeSpec
     with Matchers
     with GuiceOneAppPerSuite
     with ScalaFutures
@@ -53,7 +53,7 @@ class GoodsItemTestSupportControllerSpec
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .overrides(
-        bind[GoodsItemRecordRepository].toInstance(mockRepository),
+        bind[GoodsItemRecordRepository].toInstance(mockRepository)
       )
       .build()
 
@@ -74,7 +74,7 @@ class GoodsItemTestSupportControllerSpec
         .withJsonBody(Json.toJson(patchRequest))
         .withHeaders("Content-Type" -> "application/json")
 
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustEqual OK
       verify(mockRepository, times(1)).patch(patchRequest)
@@ -84,13 +84,24 @@ class GoodsItemTestSupportControllerSpec
 
       when(mockRepository.patch(any)).thenReturn(Future.successful(Some(Done)))
 
-      val patchRequest = PatchGoodsItemRequest("eori", "recordId", None, Some(123), None, None, None, Some(Declarable.ImmiReady), None, None)
+      val patchRequest = PatchGoodsItemRequest(
+        "eori",
+        "recordId",
+        None,
+        Some(123),
+        None,
+        None,
+        None,
+        Some(Declarable.ImmiReady),
+        None,
+        None
+      )
 
       val request = FakeRequest(routes.GoodsItemTestSupportController.patch())
         .withJsonBody(Json.toJson(patchRequest))
         .withHeaders("Content-Type" -> "application/json")
 
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustEqual OK
       verify(mockRepository, times(1)).patch(patchRequest)
@@ -106,7 +117,7 @@ class GoodsItemTestSupportControllerSpec
         .withJsonBody(Json.toJson(patchRequest))
         .withHeaders("Content-Type" -> "application/json")
 
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustEqual NOT_FOUND
       verify(mockRepository, times(1)).patch(patchRequest)
@@ -120,7 +131,7 @@ class GoodsItemTestSupportControllerSpec
         .withJsonBody(Json.toJson(invalidPayload))
         .withHeaders("Content-Type" -> "application/json")
 
-      val result = route(app, request).value
+      val result  = route(app, request).value
 
       status(result) mustEqual BAD_REQUEST
     }

@@ -22,20 +22,20 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{Assessment, Category}
 import java.time.Instant
 
 final case class PatchGoodsItemRecordRequest(
-                                               recordId: String,
-                                               eori: String,
-                                               actorId: String,
-                                               traderRef: Option[String],
-                                               comcode: Option[String],
-                                               goodsDescription: Option[String],
-                                               countryOfOrigin: Option[String],
-                                               category: Option[Category],
-                                               assessments: Option[Seq[Assessment]],
-                                               supplementaryUnit: Option[BigDecimal],
-                                               measurementUnit: Option[String],
-                                               comcodeEffectiveFromDate: Option[Instant],
-                                               comcodeEffectiveToDate: Option[Instant]
-                                             )
+  recordId: String,
+  eori: String,
+  actorId: String,
+  traderRef: Option[String],
+  comcode: Option[String],
+  goodsDescription: Option[String],
+  countryOfOrigin: Option[String],
+  category: Option[Category],
+  assessments: Option[Seq[Assessment]],
+  supplementaryUnit: Option[BigDecimal],
+  measurementUnit: Option[String],
+  comcodeEffectiveFromDate: Option[Instant],
+  comcodeEffectiveToDate: Option[Instant]
+)
 
 object PatchGoodsItemRecordRequest {
 

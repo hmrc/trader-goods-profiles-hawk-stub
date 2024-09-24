@@ -41,21 +41,23 @@ import scala.util.control.NoStackTrace
 
 @Singleton
 class GoodsItemRecordRepository @Inject() (
-                                            override val mongoComponent: MongoComponent,
-                                            configuration: Configuration,
-                                            uuidService: UuidService,
-                                            clock: Clock
-                                          )(implicit ec: ExecutionContext) extends PlayMongoRepository[GoodsItemRecord](
-  mongoComponent = mongoComponent,
-  collectionName = "goodsItemRecords",
-  domainFormat = GoodsItemRecord.mongoFormat,
-  indexes = GoodsItemRecordRepository.indexes(configuration),
-  extraCodecs = Seq(
-    Codecs.playFormatCodec(GetGoodsItemRecordsResult.mongoFormat),
-    Codecs.playFormatCodec(Assessment.format),
-    Codecs.playFormatCodec(implicitly[Format[BigDecimal]])
-  ) ++ Codecs.playFormatSumCodecs(implicitly[Format[Category]])
-) with Transactions {
+  override val mongoComponent: MongoComponent,
+  configuration: Configuration,
+  uuidService: UuidService,
+  clock: Clock
+)(implicit ec: ExecutionContext)
+    extends PlayMongoRepository[GoodsItemRecord](
+      mongoComponent = mongoComponent,
+      collectionName = "goodsItemRecords",
+      domainFormat = GoodsItemRecord.mongoFormat,
+      indexes = GoodsItemRecordRepository.indexes(configuration),
+      extraCodecs = Seq(
+        Codecs.playFormatCodec(GetGoodsItemRecordsResult.mongoFormat),
+        Codecs.playFormatCodec(Assessment.format),
+        Codecs.playFormatCodec(implicitly[Format[BigDecimal]])
+      ) ++ Codecs.playFormatSumCodecs(implicitly[Format[Category]])
+    )
+    with Transactions {
 
   private implicit val tc: TransactionConfiguration = TransactionConfiguration.strict
 
@@ -71,7 +73,7 @@ class GoodsItemRecordRepository @Inject() (
         goodsDescription = request.goodsDescription,
         countryOfOrigin = request.countryOfOrigin,
         category = request.category,
-        assessments = request.assessments, // TODO test?
+        assessments = request.assessments,
         supplementaryUnit = request.supplementaryUnit,
         measurementUnit = request.measurementUnit,
         comcodeEffectiveFromDate = request.comcodeEffectiveFromDate,
@@ -91,52 +93,67 @@ class GoodsItemRecordRepository @Inject() (
       )
     )
 
-    collection.insertOne(goodsItemRecord)
+    collection
+      .insertOne(goodsItemRecord)
       .toFuture()
       .map(_ => goodsItemRecord)
-      .recoverWith { case e: MongoWriteException if isDuplicateKeyException(e) =>
-        Future.failed(DuplicateEoriAndTraderRefException)
+      .recoverWith {
+        case e: MongoWriteException if isDuplicateKeyException(e) =>
+          Future.failed(DuplicateEoriAndTraderRefException)
       }
   }
 
   def getById(eori: String, recordId: String): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
-    collection.find(
-      Filters.and(
-        Filters.eq("recordId", recordId),
-        Filters.eq("goodsItem.eori", eori)
+    collection
+      .find(
+        Filters.and(
+          Filters.eq("recordId", recordId),
+          Filters.eq("goodsItem.eori", eori)
+        )
       )
-    ).headOption()
+      .headOption()
   }
 
-  def get(eori: String, lastUpdated: Option[Instant] = None, page: Int = 0, size: Int = 100000): Future[GetGoodsItemRecordsResult] = Mdc.preservingMdc {
-    collection.aggregate[GetGoodsItemRecordsResult](Seq(
-      Aggregates.`match`(
-        Filters.and(
-          Filters.eq("goodsItem.eori", eori),
-          lastUpdated.map(Filters.gt("metadata.updatedDateTime", _)).getOrElse(Filters.empty())
+  def get(
+    eori: String,
+    lastUpdated: Option[Instant] = None,
+    page: Int = 0,
+    size: Int = 100000
+  ): Future[GetGoodsItemRecordsResult] = Mdc.preservingMdc {
+    collection
+      .aggregate[GetGoodsItemRecordsResult](
+        Seq(
+          Aggregates.`match`(
+            Filters.and(
+              Filters.eq("goodsItem.eori", eori),
+              lastUpdated.map(Filters.gt("metadata.updatedDateTime", _)).getOrElse(Filters.empty())
+            )
+          ),
+          Aggregates.sort(Sorts.ascending("metadata.updatedDateTime")),
+          Aggregates.facet(
+            Facet("totalCount", Aggregates.count("count")),
+            Facet("records", Aggregates.skip(page * size), Aggregates.limit(size))
+          ),
+          Aggregates.unwind("$totalCount"),
+          Aggregates.project(
+            Json
+              .obj(
+                "totalCount" -> "$totalCount.count",
+                "records"    -> 1
+              )
+              .toDocument
+          )
         )
-      ),
-      Aggregates.sort(Sorts.ascending("metadata.updatedDateTime")),
-      Aggregates.facet(
-        Facet("totalCount", Aggregates.count("count")),
-        Facet("records", Aggregates.skip(page * size), Aggregates.limit(size))
-      ),
-      Aggregates.unwind("$totalCount"),
-      Aggregates.project(
-        Json.obj(
-          "totalCount" -> "$totalCount.count",
-          "records" -> 1
-        ).toDocument()
       )
-    )).headOption().map {
-      _.getOrElse(GetGoodsItemRecordsResult(0, Seq.empty))
-    }
+      .headOption()
+      .map {
+        _.getOrElse(GetGoodsItemRecordsResult(0, Seq.empty))
+      }
   }
 
   def patchRecord(request: PatchGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
     withSessionAndTransaction { session =>
       checkRecordState(session, request.recordId).flatMap { _ =>
-
         val updates = Seq(
           Some(Updates.set("goodsItem.actorId", request.actorId)),
           request.traderRef.map(Updates.set("goodsItem.traderRef", _)),
@@ -153,17 +170,21 @@ class GoodsItemRecordRepository @Inject() (
           Some(Updates.inc("metadata.version", 1))
         ).flatten
 
-        collection.findOneAndUpdate(
-          session,
-          Filters.and(
-            Filters.eq("recordId", request.recordId),
-            Filters.eq("goodsItem.eori", request.eori)
-          ),
-          Updates.combine(updates: _*),
-          FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
-        ).headOption().recoverWith { case e: MongoCommandException if isDuplicateKeyException(e) =>
-          Future.failed(DuplicateEoriAndTraderRefException)
-        }
+        collection
+          .findOneAndUpdate(
+            session,
+            Filters.and(
+              Filters.eq("recordId", request.recordId),
+              Filters.eq("goodsItem.eori", request.eori)
+            ),
+            Updates.combine(updates: _*),
+            FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+          )
+          .headOption()
+          .recoverWith {
+            case e: MongoCommandException if isDuplicateKeyException(e) =>
+              Future.failed(DuplicateEoriAndTraderRefException)
+          }
       }
     }
   }
@@ -171,7 +192,6 @@ class GoodsItemRecordRepository @Inject() (
   def updateRecord(request: UpdateGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
     withSessionAndTransaction { session =>
       checkRecordState(session, request.recordId).flatMap { _ =>
-
         val updates = Seq(
           Updates.set("goodsItem.actorId", request.actorId),
           Updates.set("goodsItem.traderRef", request.traderRef),
@@ -180,25 +200,35 @@ class GoodsItemRecordRepository @Inject() (
           Updates.set("goodsItem.countryOfOrigin", request.countryOfOrigin),
           request.category.fold(Updates.unset("goodsItem.category"))(Updates.set("goodsItem.category", _)),
           request.assessments.fold(Updates.unset("goodsItem.assessments"))(Updates.set("goodsItem.assessments", _)),
-          request.supplementaryUnit.fold(Updates.unset("goodsItem.supplementaryUnit"))(Updates.set("goodsItem.supplementaryUnit", _)),
-          request.measurementUnit.fold(Updates.unset("goodsItem.measurementUnit"))(Updates.set("goodsItem.measurementUnit", _)),
+          request.supplementaryUnit.fold(Updates.unset("goodsItem.supplementaryUnit"))(
+            Updates.set("goodsItem.supplementaryUnit", _)
+          ),
+          request.measurementUnit.fold(Updates.unset("goodsItem.measurementUnit"))(
+            Updates.set("goodsItem.measurementUnit", _)
+          ),
           Updates.set("goodsItem.comcodeEffectiveFromDate", request.comcodeEffectiveFromDate),
-          request.comcodeEffectiveToDate.fold(Updates.unset("goodsItem.comcodeEffectiveToDate"))(Updates.set("goodsItem.comcodeEffectiveToDate", _)),
+          request.comcodeEffectiveToDate.fold(Updates.unset("goodsItem.comcodeEffectiveToDate"))(
+            Updates.set("goodsItem.comcodeEffectiveToDate", _)
+          ),
           Updates.set("metadata.updatedDateTime", clock.instant()),
           Updates.inc("metadata.version", 1)
         )
 
-        collection.findOneAndUpdate(
-          session,
-          Filters.and(
-            Filters.eq("recordId", request.recordId),
-            Filters.eq("goodsItem.eori", request.eori)
-          ),
-          Updates.combine(updates: _*),
-          FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
-        ).headOption().recoverWith { case e: MongoCommandException if isDuplicateKeyException(e) =>
-          Future.failed(DuplicateEoriAndTraderRefException)
-        }
+        collection
+          .findOneAndUpdate(
+            session,
+            Filters.and(
+              Filters.eq("recordId", request.recordId),
+              Filters.eq("goodsItem.eori", request.eori)
+            ),
+            Updates.combine(updates: _*),
+            FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+          )
+          .headOption()
+          .recoverWith {
+            case e: MongoCommandException if isDuplicateKeyException(e) =>
+              Future.failed(DuplicateEoriAndTraderRefException)
+          }
       }
     }
   }
@@ -217,14 +247,17 @@ class GoodsItemRecordRepository @Inject() (
     ).flatten
 
     if (updates.nonEmpty) {
-      collection.findOneAndUpdate(
-        Filters.and(
-          Filters.eq("recordId", request.recordId),
-          Filters.eq("goodsItem.eori", request.eori)
-        ),
-        Updates.combine(updates: _*),
-        FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
-      ).toFutureOption().map(_.map(_ => Done))
+      collection
+        .findOneAndUpdate(
+          Filters.and(
+            Filters.eq("recordId", request.recordId),
+            Filters.eq("goodsItem.eori", request.eori)
+          ),
+          Updates.combine(updates: _*),
+          FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)
+        )
+        .toFutureOption()
+        .map(_.map(_ => Done))
     } else {
       Future.successful(Some(Done))
     }
@@ -239,18 +272,20 @@ class GoodsItemRecordRepository @Inject() (
 
   def deactivate(request: RemoveGoodsItemRecordRequest): Future[Option[GoodsItemRecord]] = Mdc.preservingMdc {
 
-    collection.findOneAndUpdate(
-      Filters.and(
-        Filters.eq("recordId", request.recordId),
-        Filters.eq("goodsItem.eori", request.eori)
-      ),
-      Updates.combine(
-        Updates.set("metadata.active", false),
-        Updates.inc("metadata.version", 1),
-        Updates.set("goodsItem.actorId", request.actorId),
-        Updates.set("metadata.updatedDateTime", clock.instant().truncatedTo(ChronoUnit.SECONDS))
+    collection
+      .findOneAndUpdate(
+        Filters.and(
+          Filters.eq("recordId", request.recordId),
+          Filters.eq("goodsItem.eori", request.eori)
+        ),
+        Updates.combine(
+          Updates.set("metadata.active", false),
+          Updates.inc("metadata.version", 1),
+          Updates.set("goodsItem.actorId", request.actorId),
+          Updates.set("metadata.updatedDateTime", clock.instant().truncatedTo(ChronoUnit.SECONDS))
+        )
       )
-    ).headOption()
+      .headOption()
   }
 
   private def isDuplicateKeyException(e: MongoException): Boolean =
