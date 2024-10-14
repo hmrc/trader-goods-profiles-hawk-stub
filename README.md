@@ -52,6 +52,14 @@ All endpoints follow the relevant EIS schemas
 #### Patch Goods Item Record
 `PATCH /test-support/goods-item`
 
+### Precheck
+
+it will run all the tests, as well as check the format and coverage report.
+```bash
+./precheck.sh
+```
+
+
 ### Run Unit Tests
 
 A running instance of MongoDb is needed to run the Unit Test.
