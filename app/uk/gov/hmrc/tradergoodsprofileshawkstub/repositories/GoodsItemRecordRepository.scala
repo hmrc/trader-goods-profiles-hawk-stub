@@ -51,6 +51,7 @@ class GoodsItemRecordRepository @Inject() (
       collectionName = "goodsItemRecords",
       domainFormat = GoodsItemRecord.mongoFormat,
       indexes = GoodsItemRecordRepository.indexes(configuration),
+      replaceIndexes = true,
       extraCodecs = Seq(
         Codecs.playFormatCodec(GetGoodsItemRecordsResult.mongoFormat),
         Codecs.playFormatCodec(Assessment.format),
