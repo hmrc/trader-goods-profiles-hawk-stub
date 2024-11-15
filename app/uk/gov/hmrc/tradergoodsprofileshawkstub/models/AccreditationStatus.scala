@@ -26,7 +26,7 @@ object AccreditationStatus extends PlayEnum[AccreditationStatus] {
 
   case object NotRequested extends AccreditationStatus("Not Requested")
   case object Requested extends AccreditationStatus("Requested")
-  case object Withdrawn extends AccreditationStatus("Advice withdrawn")
+  case object AdviceWithdrawn extends AccreditationStatus("Advice withdrawn")
   case object NotProvided extends AccreditationStatus("Advice not provided")
   case object InProgress extends AccreditationStatus("In progress")
   case object InformationRequested extends AccreditationStatus("Information requested")
