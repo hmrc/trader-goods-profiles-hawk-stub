@@ -38,7 +38,7 @@ All endpoints follow the relevant EIS schemas
 [Bruno request](bruno/goods-item-record/Get%20Goods%20Item%20Record.bru)
 
 #### Update Goods Item Record
-`PUT /tgp/updaterecord/v1`
+`PUT /tgp/puttgprecord/v1`
 
 [Bruno request](bruno/goods-item-record/Update%20Goods%20Item%20Record.bru)
 
