@@ -18,8 +18,7 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models
 
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
-
-import java.time.Instant
+import java.time.{Clock, Instant}
 
 final case class GoodsItemMetadata(
   accreditationStatus: AccreditationStatus,
@@ -42,4 +41,110 @@ object GoodsItemMetadata {
     implicit val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
     Json.format
   }
+}
+
+object StubbedGoodsItemMetadata {
+
+  def createStubbedGoodsItemMetadata(eori: String, clock: Clock): GoodsItemMetadata =
+    eori match {
+      case "GB777432814901" => requestedGoodsItemMetadata(clock)
+      case "GB777432814902" => inProgressGoodsItemMetadata(clock)
+      case "GB777432814903" => informationRequestedGoodsItemMetadata(clock)
+      case "GB777432814904" => withdrawnGoodsItemMetadata(clock)
+      case "GB777432814905" => approvedGoodsItemMetadata(clock)
+      case "GB777432814906" => rejectedGoodsItemMetadata(clock)
+      case _                => notRequestedGoodsItemMetadata(clock)
+
+    }
+
+  def notRequestedGoodsItemMetadata(clock: Clock) = GoodsItemMetadata(
+    accreditationStatus = AccreditationStatus.NotRequested,
+    version = 1,
+    active = true,
+    locked = false,
+    toReview = false,
+    reviewReason = None,
+    declarable = None,
+    srcSystemName = "MDTP",
+    createdDateTime = clock.instant(),
+    updatedDateTime = clock.instant()
+  )
+
+  def requestedGoodsItemMetadata(clock: Clock) = GoodsItemMetadata(
+    accreditationStatus = AccreditationStatus.Requested,
+    version = 1,
+    active = true,
+    locked = false,
+    toReview = false,
+    reviewReason = None,
+    declarable = None,
+    srcSystemName = "MDTP",
+    createdDateTime = clock.instant(),
+    updatedDateTime = clock.instant()
+  )
+
+  def inProgressGoodsItemMetadata(clock: Clock) = GoodsItemMetadata(
+    accreditationStatus = AccreditationStatus.InProgress,
+    version = 1,
+    active = true,
+    locked = false,
+    toReview = false,
+    reviewReason = None,
+    declarable = None,
+    srcSystemName = "MDTP",
+    createdDateTime = clock.instant(),
+    updatedDateTime = clock.instant()
+  )
+
+  def informationRequestedGoodsItemMetadata(clock: Clock) = GoodsItemMetadata(
+    accreditationStatus = AccreditationStatus.InformationRequested,
+    version = 1,
+    active = true,
+    locked = false,
+    toReview = false,
+    reviewReason = None,
+    declarable = None,
+    srcSystemName = "MDTP",
+    createdDateTime = clock.instant(),
+    updatedDateTime = clock.instant()
+  )
+
+  def withdrawnGoodsItemMetadata(clock: Clock) = GoodsItemMetadata(
+    accreditationStatus = AccreditationStatus.Withdrawn,
+    version = 1,
+    active = true,
+    locked = false,
+    toReview = false,
+    reviewReason = None,
+    declarable = None,
+    srcSystemName = "MDTP",
+    createdDateTime = clock.instant(),
+    updatedDateTime = clock.instant()
+  )
+
+  def approvedGoodsItemMetadata(clock: Clock) = GoodsItemMetadata(
+    accreditationStatus = AccreditationStatus.Approved,
+    version = 1,
+    active = true,
+    locked = false,
+    toReview = false,
+    reviewReason = None,
+    declarable = None,
+    srcSystemName = "MDTP",
+    createdDateTime = clock.instant(),
+    updatedDateTime = clock.instant()
+  )
+
+  def rejectedGoodsItemMetadata(clock: Clock) = GoodsItemMetadata(
+    accreditationStatus = AccreditationStatus.Rejected,
+    version = 1,
+    active = true,
+    locked = false,
+    toReview = false,
+    reviewReason = None,
+    declarable = None,
+    srcSystemName = "MDTP",
+    createdDateTime = clock.instant(),
+    updatedDateTime = clock.instant()
+  )
 }
