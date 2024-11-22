@@ -26,6 +26,7 @@ import uk.gov.hmrc.mongo.play.json.Codecs.JsonOps
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mongo.transaction.{TransactionConfiguration, Transactions}
 import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.tradergoodsprofileshawkstub.models.StubbedGoodsItemMetadata.createStubbedGoodsItemMetadata
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
@@ -80,18 +81,7 @@ class GoodsItemRecordRepository @Inject() (
         comcodeEffectiveFromDate = request.comcodeEffectiveFromDate,
         comcodeEffectiveToDate = request.comcodeEffectiveToDate
       ),
-      metadata = GoodsItemMetadata(
-        accreditationStatus = AccreditationStatus.NotRequested,
-        version = 1,
-        active = true,
-        locked = false,
-        toReview = false,
-        reviewReason = None,
-        declarable = None,
-        srcSystemName = "MDTP",
-        createdDateTime = clock.instant(),
-        updatedDateTime = clock.instant()
-      )
+      metadata = createStubbedGoodsItemMetadata(request.eori, clock)
     )
 
     collection
