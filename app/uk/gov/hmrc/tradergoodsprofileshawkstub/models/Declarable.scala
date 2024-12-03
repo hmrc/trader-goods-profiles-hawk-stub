@@ -25,6 +25,6 @@ object Declarable extends PlayEnum[Declarable] {
   override def values: IndexedSeq[Declarable] = findValues
 
   case object ImmiReady extends Declarable("IMMI Ready")
-  case object ImmiNotReady extends Declarable("Not Ready For IMMI")
+  case object ImmiNotReady extends Declarable("Not ready for IMMI")
   case object NotReady extends Declarable("Not Ready For Use")
 }
