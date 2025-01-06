@@ -316,6 +316,9 @@ object GoodsItemRecordRepository {
         IndexOptions()
           .name("traderRef_eori_idx")
           .unique(true)
+          .partialFilterExpression(
+            Filters.eq("metadata.active", true)
+          )
       ),
       IndexModel(
         Indexes.ascending("metadata.updatedDateTime"),

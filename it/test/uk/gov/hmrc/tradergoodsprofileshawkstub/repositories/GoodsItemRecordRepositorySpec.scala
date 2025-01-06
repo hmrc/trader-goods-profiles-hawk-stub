@@ -131,7 +131,44 @@ class GoodsItemRecordRepositorySpec
       results.head mustBe result
     }
 
-    "must fail if a record already exists with that eori/traderRef" in {
+    "must insert a new record with relevant details when there is inactive records with the same eori/trader ref" in {
+
+      when(mockUuidService.generate()).thenReturn("recordId")
+
+      val expectedGoodsItemRecord = generateRecord.copy(
+        recordId = "recordId",
+        goodsItem = generateRecord.goodsItem.copy(
+          traderRef = "traderRef"
+        ),
+        metadata = generateRecord.metadata.copy(
+          updatedDateTime = clock.instant(),
+          createdDateTime = clock.instant()
+        )
+      )
+
+      val deleteRequest = RemoveGoodsItemRecordRequest(
+        eori = "eori",
+        recordId = "deleteRecord",
+        actorId = "actorId"
+      )
+
+      when(mockUuidService.generate()).thenReturn("deleteRecord")
+
+      repository.insert(request).futureValue
+      repository.deactivate(deleteRequest).futureValue
+
+      when(mockUuidService.generate()).thenReturn("recordId")
+
+      val result = repository.insert(request).futureValue
+      result mustEqual expectedGoodsItemRecord
+
+      val results = repository.collection.find(Filters.eq("recordId", "recordId")).toFuture().futureValue
+      results.length mustBe 1
+      results.head mustBe result
+    }
+
+
+    "must fail if a record is active with that eori/traderRef" in {
 
       when(mockUuidService.generate())
         .thenReturn("recordId", "recordId2")
