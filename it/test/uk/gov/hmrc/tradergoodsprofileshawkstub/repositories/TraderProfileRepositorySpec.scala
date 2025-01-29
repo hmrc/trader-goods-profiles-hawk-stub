@@ -30,7 +30,7 @@ import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateTraderProfileRequest, MaintainTraderProfileRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository.DuplicateEoriException
-
+import org.mongodb.scala.gridfs.ObservableFuture
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneOffset}
 
@@ -57,7 +57,7 @@ class TraderProfileRepositorySpec
     )
     .build()
 
-  override protected lazy val repository: TraderProfileRepository = app.injector.instanceOf[TraderProfileRepository]
+  override protected val repository: TraderProfileRepository = app.injector.instanceOf[TraderProfileRepository]
 
   "upsert" - {
 

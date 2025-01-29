@@ -18,7 +18,7 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
 import cats.implicits.toFunctorOps
 import org.apache.pekko.Done
-import org.mongodb.scala.{MongoException, MongoWriteException}
+import org.mongodb.scala._
 import org.mongodb.scala.model._
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.implicitConversions
 import scala.util.control.NoStackTrace
 
 @Singleton
