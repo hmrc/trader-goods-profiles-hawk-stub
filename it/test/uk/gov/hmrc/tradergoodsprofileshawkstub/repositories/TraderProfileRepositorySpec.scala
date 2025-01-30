@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
+import org.mongodb.scala.gridfs.ObservableFuture
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -30,7 +31,7 @@ import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.TraderProfile
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateTraderProfileRequest, MaintainTraderProfileRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.TraderProfileRepository.DuplicateEoriException
-import org.mongodb.scala.gridfs.ObservableFuture
+
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneOffset}
 

@@ -37,9 +37,9 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.{GetGoodsItemsRe
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.{GoodsItemRecordRepository, TraderProfileRepository}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
 
+import java.time._
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.time._
 import java.util.UUID
 import scala.concurrent.Future
 
