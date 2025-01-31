@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
+import org.mongodb.scala.gridfs.ObservableFuture
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -57,7 +58,7 @@ class TraderProfileRepositorySpec
     )
     .build()
 
-  override protected lazy val repository: TraderProfileRepository = app.injector.instanceOf[TraderProfileRepository]
+  override protected val repository: TraderProfileRepository = app.injector.instanceOf[TraderProfileRepository]
 
   "upsert" - {
 

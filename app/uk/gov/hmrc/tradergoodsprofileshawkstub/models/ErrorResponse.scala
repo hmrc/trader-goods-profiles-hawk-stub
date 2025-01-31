@@ -40,5 +40,14 @@ object ErrorResponse {
         (__ \ "errorDetail" \ "errorMessage").write[String] ~
         (__ \ "errorDetail" \ "source").write[String] ~
         (__ \ "errorDetail" \ "sourceFaultDetail" \ "detail").write[Seq[String]]
-    )(unlift(ErrorResponse.unapply))
+    ) { errorResponse =>
+      (
+        errorResponse.correlationId,
+        errorResponse.timestamp,
+        errorResponse.errorCode,
+        errorResponse.errorMessage,
+        errorResponse.source,
+        errorResponse.detail
+      )
+    }
 }

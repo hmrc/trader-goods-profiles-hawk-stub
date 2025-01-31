@@ -18,6 +18,7 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
 import org.mockito.Mockito
 import org.mockito.Mockito.when
+import org.mongodb.scala.gridfs.ObservableFuture
 import org.mongodb.scala.model.Filters
 import org.scalactic.source.Position
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -74,7 +75,7 @@ class GoodsItemRecordRepositorySpec
     Mockito.reset(mockUuidService)
   }
 
-  override protected lazy val repository: GoodsItemRecordRepository =
+  override protected val repository: GoodsItemRecordRepository =
     app.injector.instanceOf[GoodsItemRecordRepository]
 
   "insert" - {

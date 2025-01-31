@@ -31,7 +31,7 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.services.UuidService
-
+import org.mongodb.scala._
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
