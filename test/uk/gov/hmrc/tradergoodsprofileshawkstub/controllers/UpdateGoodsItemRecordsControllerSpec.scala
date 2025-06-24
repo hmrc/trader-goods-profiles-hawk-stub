@@ -1323,37 +1323,6 @@ class UpdateGoodsItemRecordsControllerSpec
       verify(mockGoodsItemRepository, never).updateRecord(any)
     }
 
-    "when isPutMethodEnabled equal to false" - {
-      "must behave like a patch " in {
-        val request = FakeRequest(routes.UpdateGoodsItemRecordsController.putRecord())
-          .withBody(Json.toJson(patchRequestBody))
-          .withHeaders(
-            "X-Correlation-ID" -> correlationId,
-            "X-Forwarded-Host" -> forwardedHost,
-            "Content-Type"     -> "application/json",
-            "Accept"           -> "application/json",
-            "Date"             -> formattedDate,
-            "Authorization"    -> "some-token"
-          )
-
-        when(appConfig.isPutMethodEnabled).thenReturn(false)
-        when(mockTraderProfilesRepository.get(any)).thenReturn(Future.successful(Some(profile)))
-        when(mockGoodsItemRepository.patchRecord(any)).thenReturn(Future.successful(Some(record)))
-
-        val result = route(app, request).value
-
-        status(result) mustEqual OK
-
-        contentAsJson(result) mustEqual record.toGetRecordResponse(profile, clock.instant())
-        header("X-Correlation-ID", result).value mustEqual correlationId
-        header("X-Forwarded-Host", result).value mustEqual forwardedHost
-        header("Content-Type", result).value mustEqual "application/json"
-
-        verify(mockUuidService, never).generate()
-        verify(mockTraderProfilesRepository).get(patchRequestBody.eori)
-        verify(mockGoodsItemRepository).patchRecord(patchRequestBody)
-      }
-    }
   }
 
   private def generateRecord = GoodsItemRecord(

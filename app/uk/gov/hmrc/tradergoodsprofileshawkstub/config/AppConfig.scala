@@ -22,8 +22,5 @@ import javax.inject.{Inject, Singleton}
 @Singleton
 class AppConfig @Inject() (config: Configuration) {
 
-  lazy val isPutMethodEnabled: Boolean =
-    config
-      .getOptional[Boolean]("features.putMethodEnabled")
-      .getOrElse(false)
+  lazy val isPutMethodEnabled: Boolean = true
 }
