@@ -120,5 +120,5 @@ object TraderProfileRepository {
     )
   }
 
-  final case object DuplicateEoriException extends Throwable with NoStackTrace
+  case object DuplicateEoriException extends Throwable with NoStackTrace
 }

@@ -33,7 +33,7 @@
 package uk.gov.hmrc.tradergoodsprofileshawkstub.controllers
 
 import cats.data.EitherT
-import cats.implicits.{catsStdInstancesForFuture, catsSyntaxTuple4Parallel, toFoldableOps}
+import cats.implicits.catsStdInstancesForFuture
 import cats.syntax.all._
 import org.apache.pekko.Done
 import org.everit.json.schema.Schema

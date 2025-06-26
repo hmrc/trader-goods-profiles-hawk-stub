@@ -18,7 +18,6 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.repositories
 
 import org.apache.pekko.Done
 import org.mongodb.scala.model._
-import org.mongodb.scala.{ClientSession, MongoCommandException, MongoException, MongoWriteException}
 import play.api.Configuration
 import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.mongo.MongoComponent
@@ -329,7 +328,7 @@ object GoodsItemRecordRepository {
     )
   }
 
-  final case object DuplicateEoriAndTraderRefException extends Throwable with NoStackTrace
-  final case object RecordLockedException extends Throwable with NoStackTrace
-  final case object RecordInactiveException extends Throwable with NoStackTrace
+  case object DuplicateEoriAndTraderRefException extends Throwable with NoStackTrace
+  case object RecordLockedException extends Throwable with NoStackTrace
+  case object RecordInactiveException extends Throwable with NoStackTrace
 }
