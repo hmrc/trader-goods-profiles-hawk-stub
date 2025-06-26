@@ -13,7 +13,6 @@ lazy val microservice = Project("trader-goods-profiles-hawk-stub", file("."))
     scalacOptions += "-Wconf:src=routes/.*:s",
     scalacOptions += "-Yretain-trees",
   )
-  .settings(resolvers += Resolver.jcenterRepo)
   .settings(CodeCoverageSettings.settings: _*)
   .settings(PlayKeys.playDefaultPort := 10908)
 
