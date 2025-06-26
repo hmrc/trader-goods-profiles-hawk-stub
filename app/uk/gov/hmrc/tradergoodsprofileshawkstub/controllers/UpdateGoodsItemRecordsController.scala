@@ -101,54 +101,49 @@ class UpdateGoodsItemRecordsController @Inject() (
   }
 
   def putRecord(): Action[RawBuffer] = (Action andThen headersFilter).async(parse.raw) { implicit request =>
-    //Todo: remove this flag when EIS has implemented the PATCH method - TGP-2417.
-    // isPutMethodEnabled is false as default
-    if (appConfig.isPutMethodEnabled) {
-      val result = for {
-        _       <- EitherT.fromEither[Future](validateAuthorization)
-        _       <- EitherT.fromEither[Future](validateWriteHeaders)
-        body    <- EitherT.fromEither[Future](validateRequestBody[UpdateGoodsItemRecordRequest](updateRecordSchema))
-        profile <- getTraderProfile(body.eori)
-      } yield goodsItemRecordRepository
-        .updateRecord(body)
-        .map {
-          _.map { goodsItemRecord =>
-            Ok(goodsItemRecord.toGetRecordResponse(profile, clock.instant()))
-          }.getOrElse {
-            badRequest(
-              errorCode = "400",
-              errorMessage = "Bad Request",
-              source = "BACKEND",
-              detail = Seq("error: 026, message: Invalid Request Parameter")
-            )
-          }
+    val result = for {
+      _       <- EitherT.fromEither[Future](validateAuthorization)
+      _       <- EitherT.fromEither[Future](validateWriteHeaders)
+      body    <- EitherT.fromEither[Future](validateRequestBody[UpdateGoodsItemRecordRequest](updateRecordSchema))
+      profile <- getTraderProfile(body.eori)
+    } yield goodsItemRecordRepository
+      .updateRecord(body)
+      .map {
+        _.map { goodsItemRecord =>
+          Ok(goodsItemRecord.toGetRecordResponse(profile, clock.instant()))
+        }.getOrElse {
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 026, message: Invalid Request Parameter")
+          )
         }
-        .recover {
-          case DuplicateEoriAndTraderRefException =>
-            badRequest(
-              errorCode = "400",
-              errorMessage = "Bad Request",
-              source = "BACKEND",
-              detail = Seq("error: 010, message: Invalid Request Parameter")
-            )
-          case RecordLockedException              =>
-            badRequest(
-              errorCode = "400",
-              errorMessage = "Bad Request",
-              source = "BACKEND",
-              detail = Seq("error: 027, message: Invalid Request")
-            )
-          case RecordInactiveException            =>
-            badRequest(
-              errorCode = "400",
-              errorMessage = "Bad Request",
-              source = "BACKEND",
-              detail = Seq("error: 031, message: Invalid Request")
-            )
-        }
-      result.leftMap(Future.successful).merge.flatten
-    } else {
-      patchRecord()(request)
-    }
+      }
+      .recover {
+        case DuplicateEoriAndTraderRefException =>
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 010, message: Invalid Request Parameter")
+          )
+        case RecordLockedException              =>
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 027, message: Invalid Request")
+          )
+        case RecordInactiveException            =>
+          badRequest(
+            errorCode = "400",
+            errorMessage = "Bad Request",
+            source = "BACKEND",
+            detail = Seq("error: 031, message: Invalid Request")
+          )
+      }
+    result.leftMap(Future.successful).merge.flatten
+
   }
 }
