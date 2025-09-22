@@ -24,7 +24,7 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.Codecs.JsonOps
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mongo.transaction.{TransactionConfiguration, Transactions}
-import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.mdc.Mdc
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.StubbedGoodsItemMetadata.createStubbedGoodsItemMetadata
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{CreateGoodsItemRecordRequest, PatchGoodsItemRecordRequest, PatchGoodsItemRequest, RemoveGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}

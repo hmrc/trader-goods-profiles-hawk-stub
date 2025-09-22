@@ -31,7 +31,6 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.tradergoodsprofileshawkstub.config.AppConfig
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models._
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{PatchGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
@@ -58,7 +57,6 @@ class UpdateGoodsItemRecordsControllerSpec
   private val mockGoodsItemRepository      = mock[GoodsItemRecordRepository]
   private val mockTraderProfilesRepository = mock[TraderProfileRepository]
   private val mockUuidService              = mock[UuidService]
-  private val appConfig                    = mock[AppConfig]
 
   private val rfc7231Formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss O")
   private val formattedDate    = clock.instant().atZone(ZoneId.of("GMT")).format(rfc7231Formatter)
@@ -102,15 +100,13 @@ class UpdateGoodsItemRecordsControllerSpec
         bind[Clock].toInstance(clock),
         bind[GoodsItemRecordRepository].toInstance(mockGoodsItemRepository),
         bind[TraderProfileRepository].toInstance(mockTraderProfilesRepository),
-        bind[UuidService].toInstance(mockUuidService),
-        bind[AppConfig].toInstance(appConfig)
+        bind[UuidService].toInstance(mockUuidService)
       )
       .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset[Any](mockGoodsItemRepository, mockUuidService, mockTraderProfilesRepository, appConfig)
-    when(appConfig.isPutMethodEnabled).thenReturn(true)
+    Mockito.reset[Any](mockGoodsItemRepository, mockUuidService, mockTraderProfilesRepository)
   }
 
   "patchRecord" - {

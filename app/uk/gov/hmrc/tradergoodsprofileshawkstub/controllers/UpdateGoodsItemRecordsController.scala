@@ -21,7 +21,6 @@ import org.everit.json.schema.Schema
 import play.api.Configuration
 import play.api.mvc._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
-import uk.gov.hmrc.tradergoodsprofileshawkstub.config.AppConfig
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.actions.HeaderPropagationFilter
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.requests.{PatchGoodsItemRecordRequest, UpdateGoodsItemRecordRequest}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.repositories.GoodsItemRecordRepository.{DuplicateEoriAndTraderRefException, RecordInactiveException, RecordLockedException}
@@ -40,7 +39,6 @@ class UpdateGoodsItemRecordsController @Inject() (
   override val clock: Clock,
   override val configuration: Configuration,
   override val schemaValidationService: SchemaValidationService,
-  val appConfig: AppConfig,
   goodsItemRecordRepository: GoodsItemRecordRepository,
   headersFilter: HeaderPropagationFilter
 )(implicit override val ec: ExecutionContext)
