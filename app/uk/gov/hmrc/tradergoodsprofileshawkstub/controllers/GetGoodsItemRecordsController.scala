@@ -157,7 +157,7 @@ class GetGoodsItemRecordsController @Inject() (
       validatePage,
       validateSize,
       validateLastUpdatedDate
-    ).parMapN(ValidatedParams).leftMap { errors =>
+    ).parMapN(ValidatedParams.apply).leftMap { errors =>
       badRequest(
         errorCode = "400",
         errorMessage = "Bad Request",
