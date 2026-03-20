@@ -23,8 +23,11 @@ import uk.gov.hmrc.tradergoodsprofileshawkstub.models
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.StubbedGoodsItemMetadata._
 
 import java.time.{Clock, Instant, ZoneOffset}
+import play.api.libs.json._
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 
-class GoodsItemDetaDataSpec extends AnyFreeSpec with Matchers with OptionValues {
+class GoodsItemMetaDataSpec extends AnyFreeSpec with Matchers with OptionValues {
 
   private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
 
@@ -59,6 +62,45 @@ class GoodsItemDetaDataSpec extends AnyFreeSpec with Matchers with OptionValues 
         clock: Clock
       ).accreditationStatus mustBe models.AccreditationStatus.NotRequested
 
+    }
+  }
+  "Json Format" - {
+    val now   = Instant.parse("2026-03-20T11:00:00Z")
+    val model = GoodsItemMetadata(
+      accreditationStatus = AccreditationStatus.NotRequested,
+      version = 1,
+      active = true,
+      locked = false,
+      toReview = false,
+      declarable = Some("Ready"),
+      reviewReason = None,
+      srcSystemName = "MDTP",
+      createdDateTime = Instant.parse("2026-03-20T11:00:00Z"),
+      updatedDateTime = Instant.parse("2026-03-20T11:00:00Z")
+    )
+
+    "must serialise and deserialise using the standard format" in {
+      val json = Json.toJson(model)(GoodsItemMetadata.format)
+
+      (json \ "accreditationStatus").as[String] mustBe "Not Requested"
+      (json \ "version").as[Int] mustBe 1
+      (json \ "createdDateTime").as[Instant] mustBe now
+
+      json.as[GoodsItemMetadata](GoodsItemMetadata.format) mustBe model
+    }
+
+    "must serialise and deserialise using mongoFormat (handling Instant via MongoJavatimeFormats)" in {
+      // This triggers the lazy val mongoFormat and the internal instantFormat (Line 40-43)
+      implicit val mongoFormat: OFormat[GoodsItemMetadata] = GoodsItemMetadata.mongoFormat
+
+      val json = Json.toJson(model)
+
+      // Verify the field exists and can be read back
+      (json \ "srcSystemName").as[String] mustBe "MDTP"
+
+      val result = json.as[GoodsItemMetadata]
+      result mustBe model
+      result.updatedDateTime mustBe now
     }
   }
 }

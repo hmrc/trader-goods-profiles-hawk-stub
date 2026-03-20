@@ -19,6 +19,7 @@ package uk.gov.hmrc.tradergoodsprofileshawkstub.models.response
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.responses.Pagination
+import play.api.libs.json._
 
 class PaginationSpec extends AnyFreeSpec with Matchers {
 
@@ -74,6 +75,56 @@ class PaginationSpec extends AnyFreeSpec with Matchers {
       )
 
       Pagination(totalRecords = 5, page = 0, size = 3) mustEqual expected
+    }
+  }
+
+  "JSON Format" - {
+
+    "must serialise to JSON correctly" in {
+      val model = Pagination(
+        totalRecords = 10,
+        currentPage = 1,
+        totalPages = 2,
+        nextPage = None,
+        previousPage = Some(0)
+      )
+
+      val json = Json.toJson(model)
+
+      (json \ "totalRecords").as[Int] mustBe 10
+      (json \ "previousPage").as[Int] mustBe 0
+
+      (json \ "nextPage").asOpt[Int] mustBe None
+    }
+
+    "must deserialise from JSON correctly" in {
+      val json = Json.obj(
+        "totalRecords" -> 10,
+        "currentPage"  -> 0,
+        "totalPages"   -> 1,
+        "nextPage"     -> JsNull,
+        "previousPage" -> JsNull
+      )
+
+      val result = json.as[Pagination]
+      result.totalRecords mustBe 10
+      result.nextPage mustBe None
+    }
+
+    "must serialise and deserialise correctly (covering the implicit format)" in {
+      val model = Pagination(
+        totalRecords = 1,
+        currentPage = 0,
+        totalPages = 1,
+        nextPage = None,
+        previousPage = None
+      )
+
+      val json = Json.toJson(model)
+
+      (json \ "nextPage").get mustBe JsNull
+
+      json.as[Pagination] mustBe model
     }
   }
 }

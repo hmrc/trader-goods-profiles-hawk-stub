@@ -24,6 +24,10 @@ import play.api.libs.json.Json
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
+import play.api.libs.json._
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.time.Instant
 
 class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
 
@@ -693,6 +697,70 @@ class GoodsItemRecordSpec extends AnyFreeSpec with Matchers with OptionValues {
         )
 
         record2.declarable(clock.instant()) mustEqual Declarable.NotReady
+      }
+    }
+  }
+
+  "Json Format" - {
+    "GoodsItemRecord" - {
+
+      val now = Instant.parse("2026-03-20T12:00:00Z")
+
+      val goodsItem = GoodsItem(
+        eori = "GB123456789",
+        actorId = "actorId",
+        traderRef = "traderRef",
+        comcode = "12345678",
+        goodsDescription = "Test",
+        countryOfOrigin = "GB",
+        category = Some(Category.Standard),
+        assessments = None,
+        supplementaryUnit = None,
+        measurementUnit = None,
+        comcodeEffectiveFromDate = now,
+        comcodeEffectiveToDate = None
+      )
+
+      val metadata = GoodsItemMetadata(
+        accreditationStatus = AccreditationStatus.NotRequested,
+        version = 1,
+        active = true,
+        locked = false,
+        toReview = false,
+        declarable = Some("Ready"),
+        reviewReason = None,
+        srcSystemName = "MDTP",
+        createdDateTime = now,
+        updatedDateTime = now
+      )
+
+      val model = GoodsItemRecord(
+        recordId = "record-123",
+        goodsItem = goodsItem,
+        metadata = metadata
+      )
+
+      "must serialise and deserialise using the standard format" in {
+        val json = Json.toJson(model)(GoodsItemRecord.format)
+
+        (json \ "recordId").as[String] mustBe "record-123"
+        json.as[GoodsItemRecord](GoodsItemRecord.format) mustBe model
+      }
+
+      "must serialise and deserialise using mongoFormat (triggering nested mongo formats)" in {
+        // This triggers the lazy val mongoFormat (Line 120)
+        // and the nested implicits (Lines 121-122)
+        implicit val mongoFormat: OFormat[GoodsItemRecord] = GoodsItemRecord.mongoFormat
+
+        val json = Json.toJson(model)
+
+        (json \ "recordId").as[String] mustBe "record-123"
+
+        val result = json.as[GoodsItemRecord]
+        result mustBe model
+        // Verify nesting worked
+        result.goodsItem.eori mustBe "GB123456789"
+        result.metadata.srcSystemName mustBe "MDTP"
       }
     }
   }

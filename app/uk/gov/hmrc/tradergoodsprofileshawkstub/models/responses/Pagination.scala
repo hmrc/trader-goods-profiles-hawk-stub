@@ -28,10 +28,8 @@ final case class Pagination(
 
 object Pagination {
 
-  implicit lazy val format: OFormat[Pagination] = {
-    implicit val config: JsonConfiguration = JsonConfiguration(optionHandlers = OptionHandlers.WritesNull)
-    Json.format
-  }
+  implicit val config: JsonConfiguration   = JsonConfiguration(optionHandlers = OptionHandlers.WritesNull)
+  implicit val format: OFormat[Pagination] = Json.format[Pagination]
 
   def apply(totalRecords: Int, page: Int, size: Int): Pagination = {
 
