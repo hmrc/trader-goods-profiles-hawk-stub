@@ -12,10 +12,17 @@ lazy val microservice = Project("trader-goods-profiles-hawk-stub", file("."))
     // suppress warnings in generated routes files
     scalacOptions += "-Wconf:src=routes/.*:s",
     scalacOptions += "-Yretain-trees",
+    scalacOptions ++= {
+      if (coverageEnabled.value)
+        Seq(
+          "-coverage-exclude-classlikes:prod.*;app.*;testOnlyDoNotUseInAppConf.*;.*Routes.*;.*ReverseRoutes.*"
+        )
+      else Seq.empty
+    }
   )
   .settings(CodeCoverageSettings.settings: _*)
   .settings(PlayKeys.playDefaultPort := 10908)
-
+q
 lazy val it = project
   .enablePlugins(PlayScala)
   .dependsOn(microservice % "test->test")
