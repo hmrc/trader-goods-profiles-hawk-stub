@@ -22,7 +22,7 @@ lazy val microservice = Project("trader-goods-profiles-hawk-stub", file("."))
   )
   .settings(CodeCoverageSettings.settings: _*)
   .settings(PlayKeys.playDefaultPort := 10908)
-q
+
 lazy val it = project
   .enablePlugins(PlayScala)
   .dependsOn(microservice % "test->test")
