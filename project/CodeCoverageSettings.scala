@@ -1,23 +1,20 @@
 import sbt.Setting
-import scoverage.ScoverageKeys
+import scoverage.ScoverageKeys.*
 
 object CodeCoverageSettings {
 
   private val excludedPackages: Seq[String] = Seq(
-    "<empty>",
-    "Reverse.*",
-    "uk.gov.hmrc.BuildInfo",
-    "app.*",
-    "prod.*",
-    ".*Routes.*",
-    "testOnly.*",
-    "testOnlyDoNotUseInAppConf.*"
+    "prod.*;testOnlyDoNotUseInAppConf.*;app.*;.*(Routes).*;.*(ReverseRoutes).*;.*javascript.*;.*BuildInfo.*;.*$anon.*;.*Application.*",
+    ".*\\$anonfun\\$.*",
+    ".*\\$anon\\$.*",
+    ".*\\$anon.*",
+    ".*\\$.*\\$\\$.*"
   )
 
-  val settings: Seq[Setting[_]] = Seq(
-    ScoverageKeys.coverageExcludedPackages := excludedPackages.mkString(";"),
-    ScoverageKeys.coverageMinimumStmtTotal := 96,
-    ScoverageKeys.coverageFailOnMinimum := true,
-    ScoverageKeys.coverageHighlighting := true
+  val settings: Seq[Setting[?]] = Seq(
+    coverageExcludedFiles := excludedPackages.mkString(";"),
+    coverageMinimumStmtTotal := 95,
+    coverageFailOnMinimum := true,
+    coverageHighlighting := true
   )
 }

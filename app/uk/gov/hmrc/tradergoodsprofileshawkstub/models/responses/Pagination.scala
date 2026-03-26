@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,8 @@ final case class Pagination(
 
 object Pagination {
 
-  implicit lazy val format: OFormat[Pagination] = {
-    implicit val config: JsonConfiguration = JsonConfiguration(optionHandlers = OptionHandlers.WritesNull)
-    Json.format
-  }
+  implicit val config: JsonConfiguration   = JsonConfiguration(optionHandlers = OptionHandlers.WritesNull)
+  implicit val format: OFormat[Pagination] = Json.format[Pagination]
 
   def apply(totalRecords: Int, page: Int, size: Int): Pagination = {
 
