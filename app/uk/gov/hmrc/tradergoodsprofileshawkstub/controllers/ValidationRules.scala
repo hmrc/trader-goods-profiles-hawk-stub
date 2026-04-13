@@ -20,7 +20,7 @@ import cats.data._
 import cats.syntax.all._
 import org.everit.json.schema.Schema
 import play.api.Configuration
-import play.api.libs.json.{JsValue, Json, Reads}
+import play.api.libs.json.{JsError, JsSuccess, JsValue, Json, Reads}
 import play.api.mvc.{BaseController, RawBuffer, Request, Result}
 import uk.gov.hmrc.tradergoodsprofileshawkstub.controllers.ValidationRules.ValidatedHeaders
 import uk.gov.hmrc.tradergoodsprofileshawkstub.models.{ErrorResponse, TraderProfile}
@@ -108,7 +108,20 @@ trait ValidationRules { this: BaseController =>
       val validationErrors = schemaValidationService.validate(schema, json)
 
       if (validationErrors.isEmpty) {
-        Right(json.as[A])
+        json.validate[A] match {
+          case JsSuccess(value, _) => Right(value)
+          case JsError(errors) =>
+            Left {
+              badRequest(
+                errorCode = "400",
+                errorMessage = "Invalid message : Bad Request",
+                source = "Json Validation",
+                detail = errors.flatMap { case (path, validationErrors) =>
+                  validationErrors.map(error => s"$path: ${error.message}")
+                }.toSeq
+              )
+            }
+        }
       } else
         Left {
           badRequest(
