@@ -110,7 +110,7 @@ trait ValidationRules { this: BaseController =>
       if (validationErrors.isEmpty) {
         json.validate[A] match {
           case JsSuccess(value, _) => Right(value)
-          case JsError(errors) =>
+          case JsError(errors)     =>
             Left {
               badRequest(
                 errorCode = "400",
